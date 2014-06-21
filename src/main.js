@@ -151,37 +151,58 @@ function trainworkers(workerindex, amount) {
 	workers[workerindex].avglvl = indexWeightedMean(workers[workerindex].level);
 }
 
-function indexOfItem(name) {
-	for (var i=0; i < items.length; i++)
-		if (name == items[i].title)
+function indexOf(array, name) {
+	for (var i=0; i < array.length; i++)
+		if (name == array[i].title)
 			return i;
 	return -1;
 }
 
-function meets_requirement(req_list) {
+function check_req_list(req_list) {
 	var ret = true;
 	// first check if all conditions are met
 	for (var i = 0; i < req_list.length; i++) {
 		if (req_list[i].type == 'item') {
-			var ind = indexOfItem(req_list[i].id);
-			if (sum(items[ind].level) > req_list[i].amt)
+			var ind = indexOf(items, req_list[i].id);
+			if (sum(items[ind].level) >= req_list[i].amt) {
 				// ok
-			else
+			} else {
 				ret = false;
+			}
+		} else if ( req_list[i].type == 'worker') {
+			var ind = indexOf(workers, req_list[i].id);
+			if (sum(workers[ind].level) >= req_list[i].amt) {
+				// ok
+			} else {
+				ret = false;
+			}
 		} else {
 			ret=false;
 			console.log("checking for requirement fails" + req_list[i]);
+			alert(req_list);
 		}
 	}
+	return ret;
+}
 
+function remove_req_list(req_list) {
 	// in case we met all conditions, reduce the number of items etc
 	for (var i = 0; i < req_list.length; i++) {
 		if (req_list[i].type == 'item') {
-			var ind = indexOfItem(req_list[i].id);
+			var ind = indexOf(items, req_list[i].id);
 			for (var j=0; j < req_list[i].amt; j++)
 				removeOneBadItem(ind);
 		}
 	}
+}
+
+function check_and_remove_list(req_list) {
+	var ret = check_req_list(req_list);
+	if (!ret)
+		return false;
+
+	remove_req_list(req_list);
+	return true;
 }
 
 function new_game() {
@@ -200,7 +221,7 @@ function new_game() {
 					{id:'Herbs', idlevel:[0, 3], amtlvl:[0,1], time:60, req:[{type:'item', id:'Food', amt:2}]},
 					// todo skins, and with tools
 				]},
-		{title: 'Farmer', 		req:[	{type:'item', id:'Wood', amt=100},
+		{title: 'Farmer', 		req:[	{type:'item', id:'Wood', amt:100},
 										{type:'worker', id:'Unemployed', amt:1}],
 
 			prod:[	{id:'Food',  idlevel:[0, 5], amtlvl:[2,4], time: 3, req:[]},
@@ -212,16 +233,22 @@ function new_game() {
 			prod:[	{id:'Wood',  idlevel:[0, 5], amtlvl:[1,3], time: 5, req:[]},
 					{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:20, req:[]},
 				]},
-		{title: 'Stone cutter',
-			prod:[{id:2, req:[]}]},   req:[	{type:'item', id:'Wood', amt:1},
+		{title: 'Stone cutter',	req:[	{type:'item', id:'Wood', amt:1},
 										{type:'worker', id:'Unemployed', amt:1}],
+			prod:[{id:2, req:[]}]},
 
-		{title: 'Miner', 			prod:[{id:2, req:[]}, {id:3, req:{id:0, amt:0.2}}]},
-		{title: 'Smith', 			prod:[{id:4, req:[{id:3}]}]},
-		{title: 'Herbsman',			prod:[{id:0, req:[]}]},
-		{title: 'Shaman', 			prod:[{id:0, req:[]}]},
-		{title: 'Soldier', 			prod:[{id:0, req:[]}]},
-		{title: 'Horsemen', 		prod:[{id:0, req:[]}]},
+		{title: 'Miner', 		req:[	{type:'item', id:'Wood', amt:1},
+										{type:'worker', id:'Unemployed', amt:1}],	prod:[{id:2, req:[]}, {id:3, req:{id:0, amt:0.2}}]},
+		{title: 'Smith', 		req:[	{type:'item', id:'Wood', amt:1},
+										{type:'worker', id:'Unemployed', amt:1}],	prod:[{id:4, req:[{id:3}]}]},
+		{title: 'Herbsman',		req:[	{type:'item', id:'Wood', amt:1},
+										{type:'worker', id:'Unemployed', amt:1}],	prod:[{id:0, req:[]}]},
+		{title: 'Shaman', 		req:[	{type:'item', id:'Wood', amt:1},
+										{type:'worker', id:'Unemployed', amt:1}],	prod:[{id:0, req:[]}]},
+		{title: 'Soldier', 		req:[	{type:'item', id:'Wood', amt:1},
+										{type:'worker', id:'Unemployed', amt:1}],	prod:[{id:0, req:[]}]},
+		{title: 'Horsemen', 	req:[	{type:'item', id:'Wood', amt:1},
+										{type:'worker', id:'Unemployed', amt:1}],	prod:[{id:0, req:[]}]},
 	];
 	for (var i = 0; i < workers.length; i++) {
 		workers[i].level = makeArrayOf(0,maxworkerlevel);
@@ -244,7 +271,21 @@ function new_game() {
 	];
 	items[0].level[5]=100;
 
-	buildings = [];
+	buildings = [
+			// tent
+			// wooden small house
+			// stone housing
+			//
+			// smithery
+			// food storage
+			// mills and butchers (improving the quality of the food)
+			// tool makers hut
+			// ore melting hut
+			// herbary
+			// skinnery
+
+			// diese gebäude bringen 'versteckte' items, welche dann verkonsumiert werden können, müssen jedoch immer auf 0 zurückgesetzt werden
+	];
 }
 
 function population_count() {
@@ -273,7 +314,7 @@ function simulate_item_production() {
 			}
 
 			while (add > 0) {
-				var ind = indexOfItem(product.id);
+				var ind = indexOf(items, product.id);
 				items[ind].level[randirange(product.idlevel)] ++;
 				add--;
 			}
@@ -362,19 +403,10 @@ function update_workers() {
 	var tbl  = document.createElement('table');
 	for(var i = 0; i < workers.length; i++){
 		if (!workers[i].visible) {
-			var make_visible = true;
-			if (workers[i].req) {
-				for (var j=0; j < workers[i].req.length; j++) {
-					var ind = indexOfItem(workers[i].req[j].id)
-					if (ind == -1)
-						alert(workers[i].req[j].id);
-					if (!sum(items[ind].level))
-						make_visible = false;
-				}
-			}
-			if (make_visible)
+			if (check_req_list(workers[i].req))
 				workers[i].visible = true;
-			else
+
+			if (!workers[i].visible)
 				continue;
 		}
 
