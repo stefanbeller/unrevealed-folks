@@ -43,6 +43,18 @@ function makeArrayOf(value, length) {
 function sum(array){
 	return array.reduce(function(a, b) { return a + b });
 }
+function indexWeightedMean(levels) {
+	var s = sum(levels);
+	if (s == 0)
+		return 0;
+
+	var ret = 0;
+	for (var i = 0; i < levels.length; i++)
+		ret += levels[i] * i;
+	ret /= s;
+	return ret;
+}
+
 function randInt(min,max) {
 	return Math.floor((Math.random() * (max-min+1)) + min);
 }
@@ -73,7 +85,7 @@ function rnd_bmt() {
 }
 
 function binomialdraw(N, p) {
-	if (N < 15) {
+	if (p*N < 15) {
 		var ret = 0;
 		for (var i = 0; i < N; i++)
 			if (Math.random() < p)
@@ -83,7 +95,7 @@ function binomialdraw(N, p) {
 		p=Math.min(1, Math.max(0,p));
 		var gaussian = rnd_bmt();
 		var variance = N * p * (1-p);
-		var ret = Math.round(N*p + gaussian*Math.log(variance));
+		var ret = Math.round(N*p + gaussian*variance);
 		return Math.min(N, Math.max(0, ret));
 	}
 }
@@ -136,6 +148,7 @@ function trainworkers(workerindex, amount) {
 			break;
 		}
 	}
+	workers[workerindex].avglvl = indexWeightedMean(workers[workerindex].level);
 }
 
 function indexOfItem(name) {
@@ -145,6 +158,31 @@ function indexOfItem(name) {
 	return -1;
 }
 
+function meets_requirement(req_list) {
+	var ret = true;
+	// first check if all conditions are met
+	for (var i = 0; i < req_list.length; i++) {
+		if (req_list[i].type == 'item') {
+			var ind = indexOfItem(req_list[i].id);
+			if (sum(items[ind].level) > req_list[i].amt)
+				// ok
+			else
+				ret = false;
+		} else {
+			ret=false;
+			console.log("checking for requirement fails" + req_list[i]);
+		}
+	}
+
+	// in case we met all conditions, reduce the number of items etc
+	for (var i = 0; i < req_list.length; i++) {
+		if (req_list[i].type == 'item') {
+			var ind = indexOfItem(req_list[i].id);
+			for (var j=0; j < req_list[i].amt; j++)
+				removeOneBadItem(ind);
+		}
+	}
+}
 
 function new_game() {
 	var box = document.getElementById("log_config");
@@ -152,22 +190,32 @@ function new_game() {
 		logqueue.push("");
 	}
 	workers = [
-		{title: 'Unemployed', 	req:[],	prod:[]},
-		{title: 'Hunter', 	req:[{id:'Food'}],
-									prod:[	{id:'Food',  idlevel:[0, 5], amtlvl:[3,4], time: 3, req:[]},
-											{id:'Wood',  idlevel:[0, 3], amtlvl:[0,1], time:30, req:[]},
-											{id:'Herbs', idlevel:[0, 3], amtlvl:[0,1], time:30, req:[]},
-											// todo skins, and with tools
-										]},
-		{title: 'Farmer', 			prod:[	{id:'Food',  idlevel:[0, 5], amtlvl:[2,4], time: 3, req:[]},
-											{id:'Food',  idlevel:[5,10], amtlvl:[3,6], time:30, req:[]},
-											//{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:, req:[]},
-										]},
-		{title: 'Wood cutter',  req:[{id:'Wood'}],
-									prod:[	{id:'Wood',  idlevel:[0, 5], amtlvl:[1,3], time: 5, req:[]},
-											{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:20, req:[]},
-										]},
-		{title: 'Stone cutter', 	prod:[{id:2, req:[]}]},
+		{title: 'Unemployed', 	req:[	{type:'item', id:'Food', amt:50}],
+			prod:[ //{id:'Food',  idlevel:[0, 5], amtlvl:[3,4], time: 3, req:[]},
+				]},
+		{title: 'Hunter', 		req:[	{type:'item', id:'Food', amt:10},
+										{type:'worker', id:'Unemployed', amt:1}],
+			prod:[	{id:'Food',  idlevel:[0, 5], amtlvl:[3,4], time: 3, req:[]},
+					{id:'Wood',  idlevel:[0, 3], amtlvl:[0,1], time:60, req:[{type:'item', id:'Food', amt:2}]},
+					{id:'Herbs', idlevel:[0, 3], amtlvl:[0,1], time:60, req:[{type:'item', id:'Food', amt:2}]},
+					// todo skins, and with tools
+				]},
+		{title: 'Farmer', 		req:[	{type:'item', id:'Wood', amt=100},
+										{type:'worker', id:'Unemployed', amt:1}],
+
+			prod:[	{id:'Food',  idlevel:[0, 5], amtlvl:[2,4], time: 3, req:[]},
+					{id:'Food',  idlevel:[5,10], amtlvl:[3,6], time:30, req:[]},
+					//{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:, req:[]},
+				]},
+		{title: 'Wood cutter',  req:[	{type:'item', id:'Wood', amt:1},
+										{type:'worker', id:'Unemployed', amt:1}],
+			prod:[	{id:'Wood',  idlevel:[0, 5], amtlvl:[1,3], time: 5, req:[]},
+					{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:20, req:[]},
+				]},
+		{title: 'Stone cutter',
+			prod:[{id:2, req:[]}]},   req:[	{type:'item', id:'Wood', amt:1},
+										{type:'worker', id:'Unemployed', amt:1}],
+
 		{title: 'Miner', 			prod:[{id:2, req:[]}, {id:3, req:{id:0, amt:0.2}}]},
 		{title: 'Smith', 			prod:[{id:4, req:[{id:3}]}]},
 		{title: 'Herbsman',			prod:[{id:0, req:[]}]},
@@ -180,9 +228,9 @@ function new_game() {
 		workers[i].visible = false
 		workers[i].avglvl = 0;
 		if (!workers[i].lvlup)
-			workers[i].lvlup = 3*360;
+			workers[i].lvlup = 5*360 / maxworkerlevel;
 	}
-	workers[0].level[0]=3;
+	workers[0].level[0] = 30;
 
 	items = [
 		{title:'Food', 		level:makeArrayOf(0,maxitemlevel), visible:false },
@@ -235,9 +283,9 @@ function simulate_item_production() {
 
 function simulate_time() {
 
-	lastseason = Math.floor((time % 360) / 4);
+	lastseason = Math.floor((time % 360) / (360/4));
 	time += 1
-	season = Math.floor((time % 360) / 4);
+	season = Math.floor((time % 360) / (360/4));
 
 	if (season != lastseason) {
 		s = "A new season is coming. "
@@ -251,9 +299,6 @@ function simulate_time() {
 			s += "Winter is frosty beast."
 		logqueue.push(s);
 	}
-
-	logqueue.push(" "+time);
-
 
 	// food upkeep
 	var amt = 0.7 * population_count();
@@ -269,8 +314,10 @@ function simulate_time() {
 			workers[i].level[j] -= x;
 			workers[i].level[j+1] += x;
 
-			if (x > 0.1 * sum(workers[i].level))
-				logqueue.push(workers[i].title + " have better skills now.")
+			if (indexWeightedMean(workers[i].level) > workers[i].avglvl + 1) {
+				workers[i].avglvl = indexWeightedMean(workers[i].level);
+				logqueue.push(workers[i].title + " have better skills now." + workers[i].avglvl + "" + workers[i].level)
+			}
 		}
 	}
 	update_gui();
@@ -345,7 +392,7 @@ function update_workers() {
 				element.type="text";
 				element.readOnly = true;
 				element.value=" " + sum(workers[i].level)
-				//~ element.value=" " + workers[i].level
+				element.value=" " + workers[i].level; // todo remove this line
 				td.appendChild(element);
 			 } else {
 				amt = texts[j];
