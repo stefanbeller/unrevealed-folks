@@ -147,6 +147,10 @@ function indexOfItem(name) {
 
 
 function new_game() {
+	var box = document.getElementById("log_config");
+	for (var i=0; i < box.rows; i++) {
+		logqueue.push("");
+	}
 	workers = [
 		{title: 'Unemployed', 	req:[],	prod:[]},
 		{title: 'Hunter', 	req:[{id:'Food'}],
@@ -406,17 +410,9 @@ function update_items() {
 function update_log() {
 	var box = document.getElementById("log_config");
 
-
-	while (logqueue.length > 0) {
-		box.value = logqueue[0] + "\n" + box.value;
-
-		//~ var td = box.insertRow(0);
-		//~ var element = document.createElement("input");
-		//~ element.type="text";
-		//~ element.readOnly=true;
-		//~ element.value = ;
-		logqueue.splice(0,1);
-		//~ td.appendChild(element);
-		//~ box.appendChild(td);
+	box.value = "";
+	for (var i=box.rows-1; i != 0; i--) {
+		box.value += logqueue[i] + "\n";
 	}
+	logqueue.splice(0, logqueue.length-box.rows);
 }
