@@ -43,27 +43,61 @@ function makeArrayOf(value, length) {
 function sum(array){
 	return array.reduce(function(a, b) { return a + b });
 }
-var maxlevel = 16;
-var workers = [
-	{ title: 'Unemployed', 		level:[10,0,0,0,0,0,0,0,0,0,0,0,0,0,0] },
-	{ title: 'Hunter', 			level:makeArrayOf(0,maxlevel)},
-	{ title: 'Farmer', 			level:makeArrayOf(0,maxlevel)},
-	{ title: 'Wood cutter', 	level:makeArrayOf(0,maxlevel)},
-	{ title: 'Stone cutter', 	level:makeArrayOf(0,maxlevel)},
-	{ title: 'Miner', 			level:makeArrayOf(0,maxlevel)},
-	{ title: 'Smith', 			level:makeArrayOf(0,maxlevel)},
-	{ title: 'Herbsman',		level:makeArrayOf(0,maxlevel)},
-	{ title: 'Shaman', 			level:makeArrayOf(0,maxlevel)},
-	{ title: 'Soldier', 		level:makeArrayOf(0,maxlevel)},
-	{ title: 'Horsemen', 		level:makeArrayOf(0,maxlevel)},
-];
+function randInt(min,max) {
+	return Math.floor((Math.random() * (max-min+1)) + min);
+}
+function randirange(a) {
+	return randInt(a[0], a[1]);
+}
 
-var items = []
+function rnd_bmt() {
+    var x = 0, y = 0, rds, c;
 
-var buildings = [];
+    // Get two random numbers from -1 to 1.
+    // If the radius is zero or greater than 1, throw them out and pick two new ones
+    // Rejection sampling throws away about 20% of the pairs.
+    do {
+    x = Math.random()*2-1;
+    y = Math.random()*2-1;
+    rds = x*x + y*y;
+    }
+    while (rds == 0 || rds > 1)
 
-function removeOneWorker(workerindex) {
-	for (var i=0; i < maxlevel; i++) {
+    // This magic is the Box-Muller Transform
+    c = Math.sqrt(-2*Math.log(rds)/rds);
+
+    // It always creates a pair of numbers. I'll return them in an array.
+    // This function is quite efficient so don't be afraid to throw one away if you don't need both.
+    //return [x*c, y*c];
+    return x*c;
+}
+
+function binomialdraw(N, p) {
+	if (N < 15) {
+		var ret = 0;
+		for (var i = 0; i < N; i++)
+			if (Math.random() < p)
+				ret++;
+		return ret;
+	} else {
+		p=Math.min(1, Math.max(0,p));
+		var gaussian = rnd_bmt();
+		var variance = N * p * (1-p);
+		var ret = Math.round(N*p + gaussian*Math.log(variance));
+		return Math.min(N, Math.max(0, ret));
+	}
+}
+
+var maxworkerlevel = 16;
+var maxitemlevel = 16;
+var workers = null;
+var items = null;
+var buildings = null;
+var time = 0;
+var logqueue = [];
+
+function removeOneBadWorker(workerindex) {
+	for (var i=0; i < maxworkerlevel; i++) {
 		if (workers[workerindex].level[i] > 0) {
 			workers[workerindex].level[i]--;
 			return true;
@@ -72,7 +106,20 @@ function removeOneWorker(workerindex) {
 	return false;
 }
 
+function removeOneBadItem(itemindex) {
+	for (var i=0; i < maxitemlevel; i++) {
+		if (items[itemindex].level[i] > 0) {
+			items[itemindex].level[i]--;
+			return true;
+		}
+	}
+	return false;
+}
+
 function trainworkers(workerindex, amount) {
+	if (workerindex == 0)
+		workers[0].level[0] += amount;
+
 	if (amount > 0) {
 		destination = workerindex;
 		source = 0;
@@ -83,20 +130,139 @@ function trainworkers(workerindex, amount) {
 		amt = -amount;
 	}
 	for (var i = 0; i < amt; i++) {
-		if (removeOneWorker(source)) {
+		if (removeOneBadWorker(source)) {
 			workers[destination].level[0]++;
 		} else {
-
 			break;
 		}
 	}
 }
 
-function init(){
+function new_game() {
+	workers = [
+		{title: 'Unemployed', 		prod:[]},
+		{title: 'Hunter', 			prod:[	{id:'Food',  idlevel:[0, 5], amtlvl:[2,4], time: 3, req:[]},
+											{id:'Food',  idlevel:[5,10], amtlvl:[3,6], time:30, req:[]},
+											{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:20, req:[]},
+											// todo skins, and with tools
+											  ]},
+		{title: 'Farmer', 			prod:[	{id:'Food',  idlevel:[0, 5], amtlvl:[2,4], time: 3, req:[]},
+											{id:'Food',  idlevel:[5,10], amtlvl:[3,6], time:30, req:[]},
+											//{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:, req:[]},
+										]},
+		{title: 'Wood cutter', 		prod:[	{id:'Wood',  idlevel:[0, 5], amtlvl:[1,3], time: 5, req:[]},
+											{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:20, req:[]},
+										]},
+		{title: 'Stone cutter', 	prod:[{id:2, req:[]}]},
+		{title: 'Miner', 			prod:[{id:2, req:[]}, {id:3, req:{id:0, amt:0.2}}]},
+		{title: 'Smith', 			prod:[{id:4, req:[{id:3}]}]},
+		{title: 'Herbsman',			prod:[{id:0, req:[]}]},
+		{title: 'Shaman', 			prod:[{id:0, req:[]}]},
+		{title: 'Soldier', 			prod:[{id:0, req:[]}]},
+		{title: 'Horsemen', 		prod:[{id:0, req:[]}]},
+	];
+	for (var i = 0; i < workers.length; i++) {
+		workers[i].level = makeArrayOf(0,maxworkerlevel);
+		workers[i].visible = false
+		if (!workers[i].lvlup)
+			workers[i].lvlup = 3*360;
+	}
+	workers[0].level[0]=30;
+
+	items = [
+		{title:'Food', 		level:makeArrayOf(0,maxitemlevel), visible:false },
+		{title:'Wood', 		level:makeArrayOf(0,maxitemlevel), visible:false },
+		{title:'Stone', 	level:makeArrayOf(0,maxitemlevel), visible:false },
+		{title:'Ore', 		level:makeArrayOf(0,maxitemlevel), visible:false },
+		{title:'Iron', 		level:makeArrayOf(0,maxitemlevel), visible:false },
+		{title:'Herbs', 	level:makeArrayOf(0,maxitemlevel), visible:false },
+		{title:'Skins', 	level:makeArrayOf(0,maxitemlevel), visible:false },
+		{title:'Tools', 	level:makeArrayOf(0,maxitemlevel), visible:false },
+	];
+	items[0].level[5]=100;
+
+	buildings = [];
+}
+
+function population_count() {
+	var ret = 0;
+	for (var i=0; i < workers.length; i++)
+		ret += sum(workers[i].level)
+	return ret;
+}
+
+function simulate_time() {
+
+	lastseason = Math.floor((time % 360) / 4);
+	time += 1
+	season = Math.floor((time % 360) / 4);
+
+	if (season != lastseason) {
+		s = "A new season is coming. "
+		if (season == 0)
+			s += "Spring has just begun.";
+		else if (season == 1)
+			s += "Summertime!";
+		else if (season == 2)
+			s += "Autumn. Leaves are falling.";
+		else
+			s += "Winter is frosty beast."
+		logqueue.push(s);
+	}
+
+	// food upkeep
+	var amt = 0.7 * population_count();
+	for (var i = 0; i < amt; i++)
+		removeOneBadItem(0);
+
+	// production of things
+	for (var i = 0; i < workers.length; i++) {
+		var prod = workers[i].prod;
+		for (var p=0; p < prod.length; p++) {
+			product = prod[p];
+
+			add = 0;
+			for (var j=0; j < maxworkerlevel; j++) {
+				if (randInt(1, product.time) == 1) {
+					amt = (product.amtlvl[0] + (product.amtlvl[1] - product.amtlvl[0]) * j/maxworkerlevel) * workers[i].level[j];
+					add += amt;
+					//~ console.log(" i:"+i+" j:"+j +" add:" +amt);
+				}
+			}
+
+			while (add > 0) {
+				items[product.id].level[randirange(product.idlevel)] ++;
+				add--;
+			}
+		}
+	}
+
+	// worker levelups
+	for (var i = 0; i < workers.length; i++) {
+		for (var j=0; j < maxworkerlevel-1; j++) {
+			x = binomialdraw(workers[i].level[j], 1/workers[i].lvlup)
+			workers[i].level[j] -= x;
+			workers[i].level[j+1] += x;
+
+			if (x > 0.1 * sum(workers[i].level))
+				logqueue.push(workers[i].title + " have better skills now.")
+		}
+	}
 	update_gui();
 }
 
+function init(){
+	new_game();
+	update_gui();
+	setInterval(simulate_time, 1000);
+}
+
 function update_gui() {
+	update_workers();
+	update_items();
+}
+
+function update_workers() {
 	var box = document.getElementById("worker_config");
 	// clear table
 	while (box.firstChild) {
@@ -113,7 +279,9 @@ function update_gui() {
 	for (var i=0; i < OoM + 1; i++)
 		texts.push(Math.floor(-Math.pow(10,i)));
 	texts.push(['value']);
+
 	var OoM = Math.floor(Math.log(sum(workers[0].level)) / Math.log(10));
+	OoM = Math.max(0, OoM); // have at least one there
 	for (var i=0; i < OoM + 1; i++)
 		texts.push(Math.floor(Math.pow(10,i)));
 
@@ -135,11 +303,14 @@ function update_gui() {
 				element.type="text";
 				element.readOnly = true;
 				element.value=" " + sum(workers[i].level)
+				element.value=" " + workers[i].level
 				td.appendChild(element);
 			 } else {
-				if (i != 0) {
-					amt = texts[j];
+				amt = texts[j];
+				if (i != 0 || amt > 0) {
 					if (amt < 0 && sum(workers[i].level) < -amt)
+						continue;
+					if (sum(workers[0].level) == 0 && i != 0 && amt > 0)
 						continue;
 
 					var element = document.createElement("input");
@@ -147,13 +318,60 @@ function update_gui() {
 					element.value=" " + amt;
 					element.workerindex=i;
 					element.amt=amt;
-					element.onclick=function(){trainworkers(this.workerindex, this.amt); update_gui();};
+					element.onclick=function(){trainworkers(this.workerindex, this.amt); update_workers();};
 					td.appendChild(element);
 				}
 			}
-
 		}
     }
     box.appendChild(tbl);
 }
 
+function update_items() {
+	var box = document.getElementById("item_config");
+	// clear table
+	while (box.firstChild) {
+		box.removeChild(box.firstChild);
+	}
+
+	texts = ['name', 'value'];
+	// fill table
+	var tbl  = document.createElement('table');
+	for(var i = 0; i < items.length; i++){
+		if (sum(items[i].level) > 0)
+			items[i].visible=true;
+		if (!items[i].visible)
+			continue;
+
+		var tr = tbl.insertRow();
+		for(var j = 0; j < texts.length; j++){
+			 var td = tr.insertCell();
+			 if (texts[j] == 'name') {
+				var element = document.createElement("input");
+				element.type="text";
+				element.readOnly = true;
+				element.value= items[i].title;
+				td.appendChild(element);
+			 } else if  (texts[j] == 'value') {
+				var element = document.createElement("input");
+				element.type="text";
+				element.readOnly = true;
+				element.value=" " + sum(items[i].level)
+				td.appendChild(element);
+			 }
+		}
+    }
+    box.appendChild(tbl);
+}
+
+
+function update_log() {
+	var box = document.getElementById("log_config");
+
+	while (logqueue.length > 0) {
+		var td = box.insertRow();
+		td.value = logqueue[0];
+		logqueue.splice(0,1);
+		box.appendChild(td);
+	}
+}
