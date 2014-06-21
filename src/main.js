@@ -138,14 +138,23 @@ function trainworkers(workerindex, amount) {
 	}
 }
 
+function indexOfItem(name) {
+	for (var i=0; i < items.length; i++)
+		if (name == items[i].title)
+			return i;
+	return -1;
+}
+
+
 function new_game() {
 	workers = [
-		{title: 'Unemployed', 		prod:[]},
-		{title: 'Hunter', 			prod:[	{id:'Food',  idlevel:[0, 5], amtlvl:[2,4], time: 3, req:[]},
-											{id:'Food',  idlevel:[5,10], amtlvl:[3,6], time:30, req:[]},
-											{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:20, req:[]},
+		{title: 'Unemployed', 	req:[],	prod:[]},
+		{title: 'Hunter', 	req:[{'Food'}],
+			prod:[	{id:'Food',  idlevel:[0, 5], amtlvl:[3,4], time: 3, req:[]},
+											{id:'Wood',  idlevel:[0, 3], amtlvl:[0,1], time:30, req:[]},
+											{id:'Herbs', idlevel:[0, 3], amtlvl:[0,1], time:30, req:[]},
 											// todo skins, and with tools
-											  ]},
+										]},
 		{title: 'Farmer', 			prod:[	{id:'Food',  idlevel:[0, 5], amtlvl:[2,4], time: 3, req:[]},
 											{id:'Food',  idlevel:[5,10], amtlvl:[3,6], time:30, req:[]},
 											//{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:, req:[]},
@@ -164,10 +173,11 @@ function new_game() {
 	for (var i = 0; i < workers.length; i++) {
 		workers[i].level = makeArrayOf(0,maxworkerlevel);
 		workers[i].visible = false
+		workers[i].avglvl = 0;
 		if (!workers[i].lvlup)
 			workers[i].lvlup = 3*360;
 	}
-	workers[0].level[0]=30;
+	workers[0].level[0]=3;
 
 	items = [
 		{title:'Food', 		level:makeArrayOf(0,maxitemlevel), visible:false },
@@ -189,6 +199,33 @@ function population_count() {
 	for (var i=0; i < workers.length; i++)
 		ret += sum(workers[i].level)
 	return ret;
+}
+
+function simulate_item_production() {
+	// production of things
+	for (var i = 0; i < workers.length; i++) {
+		var prod = workers[i].prod;
+		for (var p=0; p < prod.length; p++) {
+			product = prod[p];
+			//~ console.log(product);
+
+			add = 0;
+			for (var j=0; j < maxworkerlevel; j++) {
+				if (!product.amtlvl)
+					product.amtlvl = [1,1];
+
+				amt = (product.amtlvl[0] + (product.amtlvl[1] - product.amtlvl[0]) * j/maxworkerlevel) * binomialdraw(workers[i].level[j], 1/product.time);
+				add += amt;
+				//~ console.log(" i:"+i+" j:"+j +" add:" +amt);
+			}
+
+			while (add > 0) {
+				var ind = indexOfItem(product.id);
+				items[ind].level[randirange(product.idlevel)] ++;
+				add--;
+			}
+		}
+	}
 }
 
 function simulate_time() {
@@ -215,27 +252,7 @@ function simulate_time() {
 	for (var i = 0; i < amt; i++)
 		removeOneBadItem(0);
 
-	// production of things
-	for (var i = 0; i < workers.length; i++) {
-		var prod = workers[i].prod;
-		for (var p=0; p < prod.length; p++) {
-			product = prod[p];
-
-			add = 0;
-			for (var j=0; j < maxworkerlevel; j++) {
-				if (randInt(1, product.time) == 1) {
-					amt = (product.amtlvl[0] + (product.amtlvl[1] - product.amtlvl[0]) * j/maxworkerlevel) * workers[i].level[j];
-					add += amt;
-					//~ console.log(" i:"+i+" j:"+j +" add:" +amt);
-				}
-			}
-
-			while (add > 0) {
-				items[product.id].level[randirange(product.idlevel)] ++;
-				add--;
-			}
-		}
-	}
+	simulate_item_production();
 
 	// worker levelups
 	for (var i = 0; i < workers.length; i++) {
@@ -288,8 +305,22 @@ function update_workers() {
 	// fill table
 	var tbl  = document.createElement('table');
 	for(var i = 0; i < workers.length; i++){
-		var tr = tbl.insertRow();
+		if (!workers[i].visible) {
+			var make_visible = true;
+			if (workers[i].req) {
+				for (var j=0; j < workers[i].req.length; j++) {
+					var ind = indexOfItem(workers[i].req[j])
+					if (!sum(items[ind]))
+						make_visible = false;
+				}
+			}
+			if (make_visible)
+				workers[i].visible = true;
+			else
+				continue;
+		}
 
+		var tr = tbl.insertRow();
 		for(var j = 0; j < texts.length; j++){
 			 var td = tr.insertCell();
 			 if (texts[j] == 'name') {
@@ -303,7 +334,7 @@ function update_workers() {
 				element.type="text";
 				element.readOnly = true;
 				element.value=" " + sum(workers[i].level)
-				element.value=" " + workers[i].level
+				//~ element.value=" " + workers[i].level
 				td.appendChild(element);
 			 } else {
 				amt = texts[j];
