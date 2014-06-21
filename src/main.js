@@ -149,8 +149,8 @@ function indexOfItem(name) {
 function new_game() {
 	workers = [
 		{title: 'Unemployed', 	req:[],	prod:[]},
-		{title: 'Hunter', 	req:[{'Food'}],
-			prod:[	{id:'Food',  idlevel:[0, 5], amtlvl:[3,4], time: 3, req:[]},
+		{title: 'Hunter', 	req:[{id:'Food'}],
+									prod:[	{id:'Food',  idlevel:[0, 5], amtlvl:[3,4], time: 3, req:[]},
 											{id:'Wood',  idlevel:[0, 3], amtlvl:[0,1], time:30, req:[]},
 											{id:'Herbs', idlevel:[0, 3], amtlvl:[0,1], time:30, req:[]},
 											// todo skins, and with tools
@@ -159,7 +159,8 @@ function new_game() {
 											{id:'Food',  idlevel:[5,10], amtlvl:[3,6], time:30, req:[]},
 											//{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:, req:[]},
 										]},
-		{title: 'Wood cutter', 		prod:[	{id:'Wood',  idlevel:[0, 5], amtlvl:[1,3], time: 5, req:[]},
+		{title: 'Wood cutter',  req:[{id:'Wood'}],
+									prod:[	{id:'Wood',  idlevel:[0, 5], amtlvl:[1,3], time: 5, req:[]},
 											{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:20, req:[]},
 										]},
 		{title: 'Stone cutter', 	prod:[{id:2, req:[]}]},
@@ -247,6 +248,9 @@ function simulate_time() {
 		logqueue.push(s);
 	}
 
+	logqueue.push(" "+time);
+
+
 	// food upkeep
 	var amt = 0.7 * population_count();
 	for (var i = 0; i < amt; i++)
@@ -277,6 +281,7 @@ function init(){
 function update_gui() {
 	update_workers();
 	update_items();
+	update_log();
 }
 
 function update_workers() {
@@ -309,8 +314,10 @@ function update_workers() {
 			var make_visible = true;
 			if (workers[i].req) {
 				for (var j=0; j < workers[i].req.length; j++) {
-					var ind = indexOfItem(workers[i].req[j])
-					if (!sum(items[ind]))
+					var ind = indexOfItem(workers[i].req[j].id)
+					if (ind == -1)
+						alert(workers[i].req[j].id);
+					if (!sum(items[ind].level))
 						make_visible = false;
 				}
 			}
@@ -399,10 +406,17 @@ function update_items() {
 function update_log() {
 	var box = document.getElementById("log_config");
 
+
 	while (logqueue.length > 0) {
-		var td = box.insertRow();
-		td.value = logqueue[0];
+		box.value = logqueue[0] + "\n" + box.value;
+
+		//~ var td = box.insertRow(0);
+		//~ var element = document.createElement("input");
+		//~ element.type="text";
+		//~ element.readOnly=true;
+		//~ element.value = ;
 		logqueue.splice(0,1);
-		box.appendChild(td);
+		//~ td.appendChild(element);
+		//~ box.appendChild(td);
 	}
 }
