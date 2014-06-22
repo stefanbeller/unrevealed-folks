@@ -27,6 +27,8 @@ modification, are permitted provided that the following conditions are met:
 
 var save = null;
 
+var DEBUG = true;
+
 // todo: count as function summing over levels
 // maxlevel 15, toin coss chance for upgrade, increases if there are higher ups already.
 // firing is a random process with weight on the low levels
@@ -42,6 +44,12 @@ function makeArrayOf(value, length) {
 
 function sum(array){
 	return array.reduce(function(a, b) { return a + b });
+}
+function sumStartingAt(array, startat) {
+	var ret = 0;
+	for (var i = startat; i < array.length; i++)
+		ret += array[i];
+	return ret;
 }
 function indexWeightedMean(levels) {
 	var s = sum(levels);
@@ -290,10 +298,10 @@ function new_game() {
 		workers[i].level = makeArrayOf(0,maxworkerlevel);
 		workers[i].visible = false
 		workers[i].avglvl = 0;
-		if (!workers[i].lvlup)
-			workers[i].lvlup = 50*360 / maxworkerlevel;
+		if (!workers[i].lvlupSelfTaught)
+			workers[i].lvlupSelfTaught = 50*360 / maxworkerlevel;
 		if (!workers[i].lvlupLearning)
-			workers[i].lvlup = 5*360 / maxworkerlevel;
+			workers[i].lvlupLearning = 5*360 / maxworkerlevel;
 	}
 	workers[0].level[0] = 30;
 
@@ -418,13 +426,22 @@ function worker_levelups() {
 	// worker levelups
 	for (var i = 0; i < workers.length; i++) {
 		for (var j=0; j < maxworkerlevel-1; j++) {
-			x = binomialdraw(workers[i].level[j], 1/workers[i].lvlup)
+			x = binomialdraw(workers[i].level[j], 1/workers[i].lvlupSelfTaught)
 			workers[i].level[j] -= x;
 			workers[i].level[j+1] += x;
 
-			if (indexWeightedMean(workers[i].level) > workers[i].avglvl + 1) {
+			if (sumStartingAt(workers[i].level, j+1) != 0) {
+				x = binomialdraw(workers[i].level[j], 1/workers[i].lvlupLearning)
+				workers[i].level[j] -= x;
+				workers[i].level[j+1] += x;
+			}
+
+			if (indexWeightedMean(workers[i].level) > workers[i].avglvl + 0.99) {
 				workers[i].avglvl = indexWeightedMean(workers[i].level);
-				logqueue.push(workers[i].title + " have better skills now." + workers[i].avglvl + "" + workers[i].level)
+				s = workers[i].title + " have better skills now." + workers[i].avglvl
+				if (DEBUG)
+					s+= "  " + workers[i].level
+				logqueue.push(s)
 			}
 		}
 	}
@@ -498,7 +515,8 @@ function update_workers() {
 				element.type="text";
 				element.readOnly = true;
 				element.value=" " + sum(workers[i].level)
-				element.value=" " + workers[i].level; // todo remove this line
+				if (DEBUG)
+					element.value += "   " + workers[i].level; // todo remove this line
 				td.appendChild(element);
 			 } else {
 				amt = texts[j];
