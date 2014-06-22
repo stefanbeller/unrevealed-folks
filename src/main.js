@@ -129,25 +129,26 @@ function removeOneBadItem(itemindex) {
 }
 
 function trainworkers(workerindex, amount) {
-	if (workerindex == 0)
-		workers[0].level[0] += amount;
 
-	if (amount > 0) {
-		destination = workerindex;
-		source = 0;
-		amt= amount;
-	} else {
-		destination = 0;
-		source = workerindex;
-		amt = -amount;
-	}
-	for (var i = 0; i < amt; i++) {
-		if (removeOneBadWorker(source)) {
-			workers[destination].level[0]++;
+	var amt=amount;
+	while (amt>0) {
+		if (check_and_remove_list(workers[workerindex].req)) {
+			workers[workerindex].level[0]++;
+			amt--;
 		} else {
 			break;
 		}
 	}
+
+	while (amt < 0) {
+		if (removeOneBadWorker(workerindex)) {
+			workers[0].level[0]++;
+			amt++;
+		} else {
+			break;
+		}
+	}
+
 	workers[workerindex].avglvl = indexWeightedMean(workers[workerindex].level);
 }
 
@@ -192,6 +193,10 @@ function remove_req_list(req_list) {
 			var ind = indexOf(items, req_list[i].id);
 			for (var j=0; j < req_list[i].amt; j++)
 				removeOneBadItem(ind);
+		} else if ( req_list[i].type == 'worker') {
+			var ind = indexOf(workers, req_list[i].id);
+			for (var j=0; j < req_list[i].amt; j++)
+				removeOneBadWorker(ind);
 		}
 	}
 }
@@ -214,13 +219,17 @@ function new_game() {
 		{title: 'Unemployed', 	req:[	{type:'item', id:'Food', amt:50}],
 			prod:[ //{id:'Food',  idlevel:[0, 5], amtlvl:[3,4], time: 3, req:[]},
 				]},
-		{title: 'Hunter', 		req:[	{type:'item', id:'Food', amt:10},
+
+
+		{title: 'Hunter', 		req:[	{type:'item', id:'Food', amt:1},
 										{type:'worker', id:'Unemployed', amt:1}],
 			prod:[	{id:'Food',  idlevel:[0, 5], amtlvl:[3,4], time: 3, req:[]},
-					{id:'Wood',  idlevel:[0, 3], amtlvl:[0,1], time:60, req:[{type:'item', id:'Food', amt:2}]},
-					{id:'Herbs', idlevel:[0, 3], amtlvl:[0,1], time:60, req:[{type:'item', id:'Food', amt:2}]},
+					//{id:'Wood',  idlevel:[0, 3], amtlvl:[0,1], time:600, req:[{type:'item', id:'Food', amt:2}]},
+					{id:'Herbs', idlevel:[0, 3], amtlvl:[0,1], time:60 , req:[{type:'item', id:'Food', amt:2}]},
 					// todo skins, and with tools
 				]},
+
+
 		{title: 'Farmer', 		req:[	{type:'item', id:'Wood', amt:100},
 										{type:'worker', id:'Unemployed', amt:1}],
 
@@ -228,48 +237,85 @@ function new_game() {
 					{id:'Food',  idlevel:[5,10], amtlvl:[3,6], time:30, req:[]},
 					//{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:, req:[]},
 				]},
-		{title: 'Wood cutter',  req:[	{type:'item', id:'Wood', amt:1},
+
+
+		{title: 'Wood cutter',  req:[	{type:'item', id:'Food', amt:10},
 										{type:'worker', id:'Unemployed', amt:1}],
 			prod:[	{id:'Wood',  idlevel:[0, 5], amtlvl:[1,3], time: 5, req:[]},
 					{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:20, req:[]},
 				]},
-		{title: 'Stone cutter',	req:[	{type:'item', id:'Wood', amt:1},
-										{type:'worker', id:'Unemployed', amt:1}],
-			prod:[{id:2, req:[]}]},
 
-		{title: 'Miner', 		req:[	{type:'item', id:'Wood', amt:1},
-										{type:'worker', id:'Unemployed', amt:1}],	prod:[{id:2, req:[]}, {id:3, req:{id:0, amt:0.2}}]},
+
+		{title: 'Stone cutter',	req:[	{type:'item', id:'Food', amt:10},
+										{type:'item', id:'Wood', amt:10},
+										{type:'worker', id:'Unemployed', amt:1}],
+			prod:[	{id:'Stone',  idlevel:[0, 5], amtlvl:[1,3], time: 5, req:[]},
+					{id:'Ore', 	  idlevel:[0, 3], amtlvl:[1,2], time:600, req:[]},
+				]},
+
+		{title: 'Miner', 		req:[	{type:'item', id:'Wood',  amt:1},
+										{type:'item', id:'Tools', amt:1},
+										{type:'worker', id:'Unemployed', amt:1}
+									],
+
+			prod:[	{id:'Stone',  idlevel:[0, 5], amtlvl:[1,3], time:50, req:[]},
+					{id:'Ore', 	  idlevel:[0, 7], amtlvl:[1,2], time:10, req:[]},
+					{id:'Ore', 	  idlevel:[7,12], amtlvl:[5,7], time:25, req:[{type:'item', id:'Tools', amt:1}]},
+				]},
+
+
 		{title: 'Smith', 		req:[	{type:'item', id:'Wood', amt:1},
-										{type:'worker', id:'Unemployed', amt:1}],	prod:[{id:4, req:[{id:3}]}]},
-		{title: 'Herbsman',		req:[	{type:'item', id:'Wood', amt:1},
-										{type:'worker', id:'Unemployed', amt:1}],	prod:[{id:0, req:[]}]},
-		{title: 'Shaman', 		req:[	{type:'item', id:'Wood', amt:1},
-										{type:'worker', id:'Unemployed', amt:1}],	prod:[{id:0, req:[]}]},
-		{title: 'Soldier', 		req:[	{type:'item', id:'Wood', amt:1},
-										{type:'worker', id:'Unemployed', amt:1}],	prod:[{id:0, req:[]}]},
-		{title: 'Horsemen', 	req:[	{type:'item', id:'Wood', amt:1},
-										{type:'worker', id:'Unemployed', amt:1}],	prod:[{id:0, req:[]}]},
+										{type:'item', id:'Ore',  amt:1},
+										{type:'worker', id:'Unemployed', amt:1}],
+
+			prod:[	{id:'Iron',  idlevel:[0, 5], amtlvl:[1,3], time:10, req:[{type:'item', id:'Ore', amt:3}]},
+					{id:'Tools', idlevel:[0, 7], amtlvl:[1,2], time:50, req:[{type:'item', id:'Iron', amt:2}, {type:'item', id:'Wood', amt:2} ]},
+				]},
+
+
+		{title: 'Herbsman',		req:[	{type:'item', id:'Herbs', amt:1},
+										{type:'worker', id:'Unemployed', amt:1}],
+			prod:[	{id:'Herbs',  idlevel:[0, 5], amtlvl:[1,3], time:10, req:[]},
+					//~ {id:'Tools', idlevel:[0, 7], amtlvl:[1,2], time:50, req:[]},
+				]},
+
+		//~ {title: 'Shaman', 		req:[	{type:'item', id:'Wood', amt:1},
+										//~ {type:'worker', id:'Unemployed', amt:1}],	prod:[{id:0, req:[]}]},
+		//~ {title: 'Soldier', 		req:[	{type:'item', id:'Wood', amt:1},
+										//~ {type:'worker', id:'Unemployed', amt:1}],	prod:[{id:0, req:[]}]},
+		//~ {title: 'Horsemen', 	req:[	{type:'item', id:'Wood', amt:1},
+										//~ {type:'worker', id:'Unemployed', amt:1}],	prod:[{id:0, req:[]}]},
 	];
 	for (var i = 0; i < workers.length; i++) {
 		workers[i].level = makeArrayOf(0,maxworkerlevel);
 		workers[i].visible = false
 		workers[i].avglvl = 0;
 		if (!workers[i].lvlup)
+			workers[i].lvlup = 50*360 / maxworkerlevel;
+		if (!workers[i].lvlupLearning)
 			workers[i].lvlup = 5*360 / maxworkerlevel;
 	}
 	workers[0].level[0] = 30;
 
 	items = [
-		{title:'Food', 		level:makeArrayOf(0,maxitemlevel), visible:false },
-		{title:'Wood', 		level:makeArrayOf(0,maxitemlevel), visible:false },
-		{title:'Stone', 	level:makeArrayOf(0,maxitemlevel), visible:false },
-		{title:'Ore', 		level:makeArrayOf(0,maxitemlevel), visible:false },
-		{title:'Iron', 		level:makeArrayOf(0,maxitemlevel), visible:false },
-		{title:'Herbs', 	level:makeArrayOf(0,maxitemlevel), visible:false },
-		{title:'Skins', 	level:makeArrayOf(0,maxitemlevel), visible:false },
-		{title:'Tools', 	level:makeArrayOf(0,maxitemlevel), visible:false },
+		{title:'Food', decaying:30 }, // decaying very fast
+		{title:'Wood', 	},
+		{title:'Stone', },
+		{title:'Ore', 	},
+		{title:'Iron', 	},
+		{title:'Herbs', },
+		{title:'Skins', },
+		{title:'Tools', },
+		// coal ?
 	];
-	items[0].level[5]=100;
+	for (var i=0; i < items.length; i++) {
+		items[i].level = makeArrayOf(0,maxitemlevel);
+		items[i].visible = false;
+		if (!items[i].decaying)
+			items[i].decaying = 0; // standard items don't decay
+
+	}
+	items[0].level[5]=99;
 
 	buildings = [
 			// tent
@@ -284,6 +330,8 @@ function new_game() {
 			// herbary
 			// skinnery
 
+			//charcoal burner ?
+
 			// diese gebäude bringen 'versteckte' items, welche dann verkonsumiert werden können, müssen jedoch immer auf 0 zurückgesetzt werden
 	];
 }
@@ -295,35 +343,7 @@ function population_count() {
 	return ret;
 }
 
-function simulate_item_production() {
-	// production of things
-	for (var i = 0; i < workers.length; i++) {
-		var prod = workers[i].prod;
-		for (var p=0; p < prod.length; p++) {
-			product = prod[p];
-			//~ console.log(product);
-
-			add = 0;
-			for (var j=0; j < maxworkerlevel; j++) {
-				if (!product.amtlvl)
-					product.amtlvl = [1,1];
-
-				amt = (product.amtlvl[0] + (product.amtlvl[1] - product.amtlvl[0]) * j/maxworkerlevel) * binomialdraw(workers[i].level[j], 1/product.time);
-				add += amt;
-				//~ console.log(" i:"+i+" j:"+j +" add:" +amt);
-			}
-
-			while (add > 0) {
-				var ind = indexOf(items, product.id);
-				items[ind].level[randirange(product.idlevel)] ++;
-				add--;
-			}
-		}
-	}
-}
-
 function simulate_time() {
-
 	lastseason = Math.floor((time % 360) / (360/4));
 	time += 1
 	season = Math.floor((time % 360) / (360/4));
@@ -340,14 +360,61 @@ function simulate_time() {
 			s += "Winter is frosty beast."
 		logqueue.push(s);
 	}
+}
 
+function upkeep() {
 	// food upkeep
 	var amt = 0.7 * population_count();
 	for (var i = 0; i < amt; i++)
 		removeOneBadItem(0);
 
-	simulate_item_production();
+	// Items can decay (i.e. hunted food decays fast, if not prepared)
+	for (var i = 0; i < items.length; i++) {
+		if (items[i].decaying) {
+			for (var j = 1; j < maxitemlevel; j++) {
+				amt = binomialdraw(items[i].level[j], 1/items[i].decaying)
+				items[i].level[j-1] += amt;
+				items[i].level[j] -= amt;
+			}
+			amt = binomialdraw(items[i].level[0], 1/items[i].decaying)
+			items[i].level[0] -= amt;
+			if (amt != 0)
+				logqueue.push(""+amt+ " " + items[i].title + " decayed.");
 
+		}
+	}
+}
+
+function simulate_item_production() {
+	// production of things
+	for (var i = 0; i < workers.length; i++) {
+		var prod = workers[i].prod;
+		for (var p=0; p < prod.length; p++) {
+			product = prod[p];
+			//~ console.log(product);
+
+			add = 0;
+			for (var j=0; j < maxworkerlevel; j++) {
+				if (!product.amtlvl)
+					product.amtlvl = [1,1];
+
+				var nr_produced_per_round = binomialdraw(workers[i].level[j], 1/product.time);
+				for (var k=0; k < nr_produced_per_round; k++) {
+					if (check_and_remove_list(product.req))
+						add += (product.amtlvl[0] + (product.amtlvl[1] - product.amtlvl[0]) * j/maxworkerlevel);
+				}
+			}
+
+			while (add > 0) {
+				var ind = indexOf(items, product.id);
+				items[ind].level[randirange(product.idlevel)] ++;
+				add--;
+			}
+		}
+	}
+}
+
+function worker_levelups() {
 	// worker levelups
 	for (var i = 0; i < workers.length; i++) {
 		for (var j=0; j < maxworkerlevel-1; j++) {
@@ -361,13 +428,20 @@ function simulate_time() {
 			}
 		}
 	}
+}
+
+function gametick() {
+	simulate_time();
+	upkeep();
+	simulate_item_production();
+	worker_levelups();
 	update_gui();
 }
 
 function init(){
 	new_game();
 	update_gui();
-	setInterval(simulate_time, 1000);
+	setInterval(gametick, 1000);
 }
 
 function update_gui() {
