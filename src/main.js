@@ -208,11 +208,18 @@ function check_req_list(req_list, amt) {
 				ret = false;
 			}
 		} else if (req_list[i].type == 'season') {
-			s = req_list[i].idtoLowerCase();
+			s = req_list[i].id.toLowerCase();
 			if ((s == 'spring' && season == 0) ||
 				(s == 'summer' && season == 1) ||
 				(s == 'autumn' && season == 2) ||
 				(s == 'winter' && season == 3) ) {
+				// ok
+			} else {
+				ret = false;
+			}
+		} else if (req_list[i].type == 'building') {
+			var ind = indexOf(buildings, req_list[i].id);
+			if (sum(buildings[ind].level) >= req_list[i].amt * amt) {
 				// ok
 			} else {
 				ret = false;
@@ -271,15 +278,18 @@ function new_game() {
 				]},
 
 		{title: 'Farmer', 		req:[	{type:'item', id:'Wood', amt:100},
-										{type:'worker', id:'Unemployed', amt:1}],
+										{type:'worker', id:'Unemployed', amt:1},
+										{type:'building', id:'Farm', amt:1}],
 
 			prod:[
 					//~ {id:'Food',  idlevel:[0, 5], amtlvl:[2,4], time: 3, req:[]},
 					//~ {id:'Food',  idlevel:[5,10], amtlvl:[3,6], time:30, req:[]},
 
-					{id:'planted_crops_spring',  idlevel:[5,10], amtlvl:[4,6], time:2, req:[{type:'season', id:'spring'}]},
-					{id:'planted_crops_autumn',  idlevel:[5,10], amtlvl:[4,6], time:2, req:[{type:'season', id:'autumn'}]},
+					{id:'planted_crops_spring',  idlevel:[5,10], amtlvl:[6,9], time:2, req:[{type:'season', id:'spring'}]},
+					{id:'planted_crops_autumn',  idlevel:[5,10], amtlvl:[6,9], time:2, req:[{type:'season', id:'autumn'}]},
 
+					{id:'Food',  idlevel:[5,10], amtlvl:[9,9], time:1, req:[{type:'item', id:'planted_crops_spring', amt:9},{type:'season', id:'autumn'}]},
+					{id:'Food',  idlevel:[5,10], amtlvl:[9,9], time:1, req:[{type:'item', id:'planted_crops_autumn', amt:9},{type:'season', id:'spring'}]},
 					{id:'Food',  idlevel:[5,10], amtlvl:[1,1], time:1, req:[{type:'item', id:'planted_crops_spring', amt:1},{type:'season', id:'autumn'}]},
 					{id:'Food',  idlevel:[5,10], amtlvl:[1,1], time:1, req:[{type:'item', id:'planted_crops_autumn', amt:1},{type:'season', id:'spring'}]},
 
@@ -365,12 +375,14 @@ function new_game() {
 		items[i].visible = false;
 		if (!items[i].decaying)
 			items[i].decaying = 0; // standard items don't decay
+		if (!items[i].hidden)
+			items[i].hidden=false;
 
 	}
 	items[0].level[5]=99;
 
 	buildings = [
-		{title:'Tent'},
+		{title:'Tent', req:{type:'item', id:'Skin', amt:1}},
 		{title:'Hut'},
 		{title:'House'},
 
@@ -564,6 +576,7 @@ function init(){
 function update_gui() {
 	update_workers();
 	update_items();
+	update_buildings();
 	update_log();
 }
 
@@ -685,6 +698,53 @@ function update_items() {
     box.appendChild(tbl);
 }
 
+function update_buildings() {
+	var box = document.getElementById("building_config");
+	// clear table
+	while (box.firstChild) {
+		box.removeChild(box.firstChild);
+	}
+
+	texts = ['name', 'value', 1];
+	// fill table
+	var tbl  = document.createElement('table');
+	for(var i = 0; i < buildings.length; i++){
+		if (check_req_list(buildings[i].req))
+			buildings[i].visible = true;
+
+		if (!buildings[i].visible || (buildings[i].hidden && !DEBUG))
+			continue;
+
+		var tr = tbl.insertRow();
+		for(var j = 0; j < texts.length; j++){
+			 var td = tr.insertCell();
+			 if (texts[j] == 'name') {
+				var element = document.createElement("input");
+				element.type="text";
+				element.readOnly = true;
+				element.value= buildings[i].title;
+				td.appendChild(element);
+			 } else if  (texts[j] == 'value') {
+				var element = document.createElement("input");
+				element.type="text";
+				element.readOnly = true;
+				element.value=" " + sum(buildings[i].level)
+				td.appendChild(element);
+			 } else {
+				if (check_req_list(buildings[i].req)) {
+					var element = document.createElement("input");
+					element.type="button";
+					element.value="Build a " + buildings[i].title;
+					element.buildingindex=i;
+
+					element.onclick=function(){createBuilding(this.workerindex, 1); update_gui();};
+					td.appendChild(element);
+				}
+			}
+		}
+    }
+    box.appendChild(tbl);
+}
 
 function update_log() {
 	var box = document.getElementById("log_config");
