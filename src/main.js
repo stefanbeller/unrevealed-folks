@@ -51,6 +51,7 @@ function sumStartingAt(array, startat) {
 		ret += array[i];
 	return ret;
 }
+
 function indexWeightedMean(levels) {
 	var s = sum(levels);
 	if (s == 0)
@@ -61,6 +62,14 @@ function indexWeightedMean(levels) {
 		ret += levels[i] * i;
 	ret /= s;
 	return ret;
+}
+
+function highestIndexNonZero(array) {
+	var ret = 0;
+	for (var i = array.length-1; i > -1; i--)
+		if (array[i] != 0)
+			return i;
+	return -1;
 }
 
 function randInt(min,max) {
@@ -134,6 +143,17 @@ function removeOneBadItem(itemindex) {
 		}
 	}
 	return false;
+}
+
+function removeRandom(array) {
+	s = sum(array);
+	r = Math.random();
+	for (var i = 0; i < array.length; i++) {
+		if (r > sumStartingAt(array, i+1)) {
+			array[i]--;
+			break;
+		}
+	}
 }
 
 function trainworkers(workerindex, amount) {
@@ -298,6 +318,7 @@ function new_game() {
 		workers[i].level = makeArrayOf(0,maxworkerlevel);
 		workers[i].visible = false
 		workers[i].avglvl = 0;
+		workers[i].maxlvl = 1;
 		if (!workers[i].lvlupSelfTaught)
 			workers[i].lvlupSelfTaught = 50*360 / maxworkerlevel;
 		if (!workers[i].lvlupLearning)
@@ -370,11 +391,34 @@ function simulate_time() {
 	}
 }
 
+function starveRandomWorker(amt) {
+	if (amt <= 0)
+		return;
+
+	r = Math.random();
+	s = population_count()
+	si = s;
+	for (var j=0; j < amt; j++) {
+		for (var i=0; i < workers.length; i++) {
+			si -= sum(workers[i].level);
+			if (r > si/s) {
+				removeRandom(workers[i].level);
+				break;
+			}
+		}
+	}
+	logqueue.push(" "+amt + " people starved.");
+}
+
 function upkeep() {
 	// food upkeep
 	var amt = 0.7 * population_count();
+	var neededfood = 0;
 	for (var i = 0; i < amt; i++)
-		removeOneBadItem(0);
+		if (!removeOneBadItem(indexOf(items, 'Food')))
+			neededfood++;
+
+	starveRandomWorker(Math.round(neededfood*Math.random()));
 
 	// Items can decay (i.e. hunted food decays fast, if not prepared)
 	for (var i = 0; i < items.length; i++) {
@@ -391,6 +435,8 @@ function upkeep() {
 
 		}
 	}
+
+	//~ if ()
 }
 
 function simulate_item_production() {
@@ -426,9 +472,11 @@ function worker_levelups() {
 	// worker levelups
 	for (var i = 0; i < workers.length; i++) {
 		for (var j=0; j < maxworkerlevel-1; j++) {
-			x = binomialdraw(workers[i].level[j], 1/workers[i].lvlupSelfTaught)
-			workers[i].level[j] -= x;
-			workers[i].level[j+1] += x;
+			if (workers[i].lvlupSelfTaught != 0) {
+				x = binomialdraw(workers[i].level[j], 1/workers[i].lvlupSelfTaught)
+				workers[i].level[j] -= x;
+				workers[i].level[j+1] += x;
+			}
 
 			if (sumStartingAt(workers[i].level, j+1) != 0) {
 				x = binomialdraw(workers[i].level[j], 1/workers[i].lvlupLearning)
@@ -438,9 +486,17 @@ function worker_levelups() {
 
 			if (indexWeightedMean(workers[i].level) > workers[i].avglvl + 0.99) {
 				workers[i].avglvl = indexWeightedMean(workers[i].level);
-				s = workers[i].title + " have better skills now." + workers[i].avglvl
+				s = workers[i].title + " have better skills now."
 				if (DEBUG)
-					s+= "  " + workers[i].level
+					s+= "  " + workers[i].maxlvl + "  " + workers[i].avglvl + "  " + workers[i].level
+				logqueue.push(s)
+			}
+
+			if (workers[i].maxlvl < highestIndexNonZero(workers[i].level)) {
+				workers[i].maxlvl = highestIndexNonZero(workers[i].level);
+				s = "The best " + workers[i].title + " learned a new trick.";
+				if (DEBUG)
+					s+= "  " + workers[i].maxlvl + "  " + workers[i].avglvl + "  " + workers[i].level
 				logqueue.push(s)
 			}
 		}
@@ -449,8 +505,8 @@ function worker_levelups() {
 
 function gametick() {
 	simulate_time();
-	upkeep();
 	simulate_item_production();
+	upkeep();
 	worker_levelups();
 	update_gui();
 }
