@@ -119,6 +119,7 @@ function binomialdraw(N, p) {
 
 var maxworkerlevel = 16;
 var maxitemlevel = 16;
+var maxbuildinglevel = 16;
 var workers = null;
 var items = null;
 var buildings = null;
@@ -180,6 +181,14 @@ function trainworkers(workerindex, amount) {
 	workers[workerindex].avglvl = indexWeightedMean(workers[workerindex].level);
 }
 
+function createBuilding(buildingindex, amt) {
+	while (amt > 0) {
+		if (check_and_remove_list(buildings[buildingindex].req))
+			buildings[buildingindex].level[0]++;
+		amt--;
+	}
+}
+
 function indexOf(array, name) {
 	for (var i=0; i < array.length; i++)
 		if (name == array[i].title)
@@ -195,6 +204,8 @@ function check_req_list(req_list, amt) {
 	for (var i = 0; i < req_list.length; i++) {
 		if (req_list[i].type == 'item') {
 			var ind = indexOf(items, req_list[i].id);
+			if (ind == -1)
+				alert('unknown item' + req_list[i].id);
 			if (sum(items[ind].level) >= req_list[i].amt * amt) {
 				// ok
 			} else {
@@ -270,8 +281,8 @@ function new_game() {
 
 		{title: 'Hunter', 		req:[	{type:'item', id:'Food', amt:1},
 										{type:'worker', id:'Unemployed', amt:1}],
-			prod:[	{id:'Food',  idlevel:[0, 3], amtlvl:[2,2], time:  3, req:[]},
-					{id:'Food',  idlevel:[0, 3], amtlvl:[1,2], time:  7, req:[]},
+			prod:[	{id:'Food',  idlevel:[0, 1], amtlvl:[2,2], time:  3, req:[]},
+					{id:'Food',  idlevel:[0, 2], amtlvl:[1,2], time:  7, req:[]},
 					{id:'Food',  idlevel:[0, 3], amtlvl:[1,2], time:  9, req:[]},
 					{id:'Herbs', idlevel:[0, 3], amtlvl:[0,1], time:360, req:[{type:'item', id:'Food', amt:2}]},
 					// todo skins, and with tools
@@ -285,8 +296,8 @@ function new_game() {
 					//~ {id:'Food',  idlevel:[0, 5], amtlvl:[2,4], time: 3, req:[]},
 					//~ {id:'Food',  idlevel:[5,10], amtlvl:[3,6], time:30, req:[]},
 
-					{id:'planted_crops_spring',  idlevel:[5,10], amtlvl:[6,9], time:2, req:[{type:'season', id:'spring'}]},
-					{id:'planted_crops_autumn',  idlevel:[5,10], amtlvl:[6,9], time:2, req:[{type:'season', id:'autumn'}]},
+					{id:'planted_crops_spring',  idlevel:[5,12], amtlvl:[6,9], time:2, req:[{type:'season', id:'spring'}]},
+					{id:'planted_crops_autumn',  idlevel:[5,12], amtlvl:[6,9], time:2, req:[{type:'season', id:'autumn'}]},
 
 					{id:'Food',  idlevel:[5,10], amtlvl:[9,9], time:1, req:[{type:'item', id:'planted_crops_spring', amt:9},{type:'season', id:'autumn'}]},
 					{id:'Food',  idlevel:[5,10], amtlvl:[9,9], time:1, req:[{type:'item', id:'planted_crops_autumn', amt:9},{type:'season', id:'spring'}]},
@@ -382,21 +393,21 @@ function new_game() {
 	items[0].level[5]=99;
 
 	buildings = [
-		{title:'Tent', req:{type:'item', id:'Skin', amt:1}},
-		{title:'Hut'},
-		{title:'House'},
+		{title:'Tent', req:[{type:'item', id:'Skins', amt:1}]},
+		{title:'Hut' ,req:[{type:'item', id:'Wood', amt:100}]},
+		{title:'House',req:[{type:'item', id:'Wood', amt:100}]},
 
-		{title:'Farm'},
-		{title:'Mill'},
-		{title:'Butchery'},
+		{title:'Farm',req:[{type:'item', id:'Wood', amt:100}]},
+		{title:'Mill',req:[{type:'item', id:'Wood', amt:100}]},
+		{title:'Butchery',req:[{type:'item', id:'Wood', amt:100}]},
 
-		{title:'Tool Makers Hut'},
-		{title:'Smithery'},
-		{title:'Ore Melting Hut'},
-		{title:'Charcoal burner'},
+		{title:'Tool Makers Hut',req:[{type:'item', id:'Wood', amt:100}]},
+		{title:'Smithery',req:[{type:'item', id:'Wood', amt:100}]},
+		{title:'Ore Melting Hut',req:[{type:'item', id:'Wood', amt:100}]},
+		{title:'Charcoal burner',req:[{type:'item', id:'Wood', amt:100}]},
 
-		{title:'Herb Garden'},
-		{title:'Skinner Hut'},
+		{title:'Herb Garden',req:[{type:'item', id:'Wood', amt:100}]},
+		{title:'Skinner Hut',req:[{type:'item', id:'Wood', amt:100}]},
 
 
 			// tent
@@ -415,6 +426,13 @@ function new_game() {
 
 			// diese gebäude bringen 'versteckte' items, welche dann verkonsumiert werden können, müssen jedoch immer auf 0 zurückgesetzt werden
 	];
+
+	for (var i=0; i < buildings.length; i++) {
+		buildings[i].level = makeArrayOf(0,maxbuildinglevel);
+		buildings[i].visible = false;
+		if (!buildings[i].hidden)
+			buildings[i].hidden=false;
+	}
 }
 
 function population_count() {
@@ -688,9 +706,11 @@ function update_items() {
 				td.appendChild(element);
 			 } else if  (texts[j] == 'value') {
 				var element = document.createElement("input");
-				element.type="text";
+				element.type = "text";
 				element.readOnly = true;
-				element.value=" " + sum(items[i].level)
+				element.value = " " + sum(items[i].level)
+				if (DEBUG)
+					element.value += "    " + items[i].level
 				td.appendChild(element);
 			 }
 		}
@@ -737,7 +757,7 @@ function update_buildings() {
 					element.value="Build a " + buildings[i].title;
 					element.buildingindex=i;
 
-					element.onclick=function(){createBuilding(this.workerindex, 1); update_gui();};
+					element.onclick=function(){createBuilding(this.buildingindex, 1); update_gui();};
 					td.appendChild(element);
 				}
 			}
