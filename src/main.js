@@ -1,28 +1,6 @@
 /*
 Copyright (c) <2014>, <Stefan Beller>
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice,
-      this list of conditions and the following disclaimer.
-
-    * Redistributions in binary form must reproduce the above copyright
-      notice, this list of conditions and the following disclaimer
-      in the documentation and/or other materials provided with the distribution.
-
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-* LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-* SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-* INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-* CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
-* THE POSSIBILITY OF SUCH DAMAGE.
+GPLv3 or later.
 */
 
 var save = null;
@@ -322,8 +300,9 @@ function new_game() {
 		{title: 'Wood cutter',  req:[	{type:'item', id:'Food', amt:10},
 										{type:'worker', id:'Unemployed', amt:1}],
 			prod:[	{id:'Wood',  idlevel:[0, 5], amtlvl:[1,3], time: 5, req:[]},
-					{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:20, req:[]},
-				]},// todo make dependant on season!
+					{id:'Wood',  idlevel:[3, 7], amtlvl:[1,3], time: 5, req:[type:'season', id:'winter'}]},
+					{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:20, req:[type:'season', id:'summer'}]},
+				]},
 
 
 		{title: 'Stone cutter',	req:[	{type:'item', id:'Food', amt:10},
@@ -363,8 +342,10 @@ function new_game() {
 
 		{title: 'Herbsman',		req:[	{type:'item', id:'Herbs', amt:1},
 										{type:'worker', id:'Unemployed', amt:1}],
-			prod:[	{id:'Herbs',  idlevel:[0, 5], amtlvl:[1,3], time:10, req:[]},
-					//~ {id:'Tools', idlevel:[0, 7], amtlvl:[1,2], time:50, req:[]},
+			prod:[
+				{id:'Herbs',  idlevel:[0, 5], amtlvl:[1,3], time:10, req:[type:'season', id:'spring']},
+				{id:'Herbs',  idlevel:[3, 7], amtlvl:[2,5], time:10, req:[type:'season', id:'summer']},
+				{id:'Herbs',  idlevel:[2, 6], amtlvl:[1,3], time:10, req:[type:'season', id:'autumn']},
 				]},
 
 		//~ {title: 'Shaman', 		req:[	{type:'item', id:'Wood', amt:1},
