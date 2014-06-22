@@ -280,9 +280,9 @@ function new_game() {
 				]},
 
 
-		{title: 'Hunter', 		req:[	{type:'item', id:'Food', amt:1},
+		{title: 'Hunter', 		req:[	//{type:'item', id:'Food', amt:1},
 										{type:'worker', id:'Unemployed', amt:1}],
-			prod:[	{id:'Food',  idlevel:[0, 1], amtlvl:[2,2], time:  3, req:[]},
+			prod:[	{id:'Food',  idlevel:[0, 1], amtlvl:[2,3], time:  3, req:[]},
 					{id:'Food',  idlevel:[0, 2], amtlvl:[1,2], time:  7, req:[]},
 					{id:'Food',  idlevel:[0, 3], amtlvl:[1,2], time:  9, req:[]},
 					{id:'Food',  idlevel:[0, 2], amtlvl:[1,2], time:  11, req:[{type:'season', id:'spring'}]},
@@ -310,8 +310,8 @@ function new_game() {
 					{id:'Food',  idlevel:[8,14], amtlvl:[2,3], time:1, req:[{type:'item', id:'planted_crops_spring', amt:1},{type:'item', id:'crop_milling', amt:1},{type:'season', id:'autumn'}]},
 					{id:'Food',  idlevel:[8,14], amtlvl:[2,3], time:1, req:[{type:'item', id:'planted_crops_autumn', amt:1},{type:'item', id:'crop_milling', amt:1},{type:'season', id:'spring'}]},
 
-					{id:'Food',  idlevel:[5,10], amtlvl:[9,9], time:1, req:[{type:'item', id:'planted_crops_spring', amt:9},{type:'season', id:'autumn'}]},
-					{id:'Food',  idlevel:[5,10], amtlvl:[9,9], time:1, req:[{type:'item', id:'planted_crops_autumn', amt:9},{type:'season', id:'spring'}]},
+					{id:'Food',  idlevel:[5,10], amtlvl:[5,8], time:1, req:[{type:'item', id:'planted_crops_spring', amt:5},{type:'season', id:'autumn'}]},
+					{id:'Food',  idlevel:[5,10], amtlvl:[5,8], time:1, req:[{type:'item', id:'planted_crops_autumn', amt:5},{type:'season', id:'spring'}]},
 					{id:'Food',  idlevel:[5,10], amtlvl:[1,1], time:1, req:[{type:'item', id:'planted_crops_spring', amt:1},{type:'season', id:'autumn'}]},
 					{id:'Food',  idlevel:[5,10], amtlvl:[1,1], time:1, req:[{type:'item', id:'planted_crops_autumn', amt:1},{type:'season', id:'spring'}]},
 
@@ -378,7 +378,7 @@ function new_game() {
 		workers[i].level = makeArrayOf(0,maxworkerlevel);
 		workers[i].visible = false
 		workers[i].avglvl = 0;
-		workers[i].maxlvl = 1;
+		workers[i].maxlvl = 0;
 		if (!workers[i].lvlupSelfTaught)
 			workers[i].lvlupSelfTaught = 50*360 / maxworkerlevel;
 		if (!workers[i].lvlupLearning)
@@ -545,7 +545,7 @@ function simulate_item_production(array) {
 			product = prod[p];
 
 			var add = 0;
-			var maxlevel = array[i].level;
+			var maxlevel = array[i].level.length;
 			for (var j=0; j < maxlevel; j++) {
 				if (!product.amtlvl)
 					product.amtlvl = [1,1];
