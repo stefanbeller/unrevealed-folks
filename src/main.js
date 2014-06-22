@@ -124,6 +124,7 @@ var workers = null;
 var items = null;
 var buildings = null;
 var time = 0;
+var season = 0;
 var logqueue = [];
 
 function removeOneBadWorker(workerindex) {
@@ -342,7 +343,7 @@ function new_game() {
 					{id:'Ore', 	  idlevel:[7,12], amtlvl:[5,7], time:25, req:[{type:'item', id:'Tools', amt:1}]},
 				]},
 
-		{title: 'Craftsman'		req:[	{type:'item', id:'Food',   amt:1},
+		{title: 'Craftsman',	req:[	{type:'item', id:'Food',   amt:1},
 										{type:'item', id:'Wood',   amt:1},
 										{type:'item', id:'Skins',   amt:1},
 										{type:'item', id:'Stone',  amt:1},
@@ -403,6 +404,7 @@ function new_game() {
 	for (var i=0; i < items.length; i++) {
 		items[i].level = makeArrayOf(0,maxitemlevel);
 		items[i].visible = false;
+		items[i].ignoredecay = false;
 		if (!items[i].decaying)
 			items[i].decaying = 0; // standard items don't decay
 		if (!items[i].hidden)
@@ -417,12 +419,11 @@ function new_game() {
 		{title:'House',req:[{type:'item', id:'Wood', amt:100}]},
 
 		{title:'Farm',req:[{type:'item', id:'Wood', amt:100}]},
-		{title:'Mill',	req:[{type:'item', id:'Wood', amt:100}]
+		{title:'Mill',	req:[{type:'item', id:'Wood', amt:100}],
 				prod:[
 					{id:'crop_milling', idlevel:[0, 7], amtlvl:[1,2], time:3, req:[]},
 				]},
 
-			},
 		{title:'Butchery',req:[{type:'item', id:'Wood', amt:100}]},
 
 		{title:'Tool Makers Hut',req:[{type:'item', id:'Wood', amt:100}]},
@@ -456,6 +457,8 @@ function new_game() {
 		buildings[i].visible = false;
 		if (!buildings[i].hidden)
 			buildings[i].hidden=false;
+		if (!buildings[i].prod)
+			buildings[i].prod=[];
 	}
 }
 
@@ -527,34 +530,32 @@ function upkeep() {
 			}
 			amt = binomialdraw(items[i].level[0], 1/items[i].decaying)
 			items[i].level[0] -= amt;
-			if (amt != 0 && !items[i].hidden)
+
+			if (amt != 0 && !items[i].hidden && !items[i].ignoredecay)
 				logqueue.push(""+amt+ " " + items[i].title + " decayed.");
 		}
 	}
-
-	//~ if ()
 }
 
-function simulate_item_production() {
+function simulate_item_production(array) {
 	// production of things
-	for (var i = 0; i < workers.length; i++) {
-		var prod = workers[i].prod;
+	for (var i = 0; i < array.length; i++) {
+		var prod = array[i].prod;
 		for (var p=0; p < prod.length; p++) {
 			product = prod[p];
 
-
 			var add = 0;
-			for (var j=0; j < maxworkerlevel; j++) {
+			var maxlevel = array[i].level;
+			for (var j=0; j < maxlevel; j++) {
 				if (!product.amtlvl)
 					product.amtlvl = [1,1];
 
-				var nr_produced_per_round = binomialdraw(workers[i].level[j], 1/product.time);
+				var nr_produced_per_round = binomialdraw(array[i].level[j], 1/product.time);
 				for (var k=0; k < nr_produced_per_round; k++) {
 					if (check_and_remove_list(product.req))
-						add += (product.amtlvl[0] + (product.amtlvl[1] - product.amtlvl[0]) * j/maxworkerlevel);
+						add += (product.amtlvl[0] + (product.amtlvl[1] - product.amtlvl[0]) * j/maxlevel);
 				}
 			}
-			//~ console.log(" "+product + "" + add);
 
 			while (add > 0) {
 				var ind = indexOf(items, product.id);
@@ -602,7 +603,8 @@ function worker_levelups() {
 
 function gametick() {
 	simulate_time();
-	simulate_item_production();
+	simulate_item_production(workers);
+	simulate_item_production(buildings);
 	upkeep();
 	worker_levelups();
 	update_gui();
@@ -619,6 +621,7 @@ function update_gui() {
 	update_items();
 	update_buildings();
 	update_log();
+	update_time();
 }
 
 function update_workers() {
@@ -709,7 +712,7 @@ function update_items() {
 		box.removeChild(box.firstChild);
 	}
 
-	texts = ['name', 'value'];
+	texts = ['name', 'value', 'ignoredecay'];
 	// fill table
 	var tbl  = document.createElement('table');
 	for(var i = 0; i < items.length; i++){
@@ -720,14 +723,14 @@ function update_items() {
 
 		var tr = tbl.insertRow();
 		for(var j = 0; j < texts.length; j++){
-			 var td = tr.insertCell();
-			 if (texts[j] == 'name') {
+			var td = tr.insertCell();
+			if (texts[j] == 'name') {
 				var element = document.createElement("input");
 				element.type="text";
 				element.readOnly = true;
 				element.value= items[i].title;
 				td.appendChild(element);
-			 } else if  (texts[j] == 'value') {
+			} else if  (texts[j] == 'value') {
 				var element = document.createElement("input");
 				element.type = "text";
 				element.readOnly = true;
@@ -735,7 +738,20 @@ function update_items() {
 				if (DEBUG)
 					element.value += "    " + items[i].level
 				td.appendChild(element);
-			 }
+			} else if (texts[j] == 'ignoredecay') {
+				if (items[i].decaying) {
+					var element = document.createElement("input");
+					element.type = "button";
+					if (items[i].ignoredecay)
+						element.value = "View decaying " + items[i].title;
+					else
+						element.value = "Ignore decaying " + items[i].title;
+					element.itemindex = i;
+					element.onclick = function(){items[this.itemindex].ignoredecay = !items[this.itemindex].ignoredecay; update_gui(); }
+
+					td.appendChild(element);
+				}
+			}
 		}
     }
     box.appendChild(tbl);
@@ -787,6 +803,46 @@ function update_buildings() {
 		}
     }
     box.appendChild(tbl);
+}
+
+function season_string() {
+	var mod = "";
+	var t = (time % 360) % (360/4)
+	if (t < 31)
+		mod = "Early ";
+	else if (t > 30 && t < 61)
+		mod = "Mid ";
+	else
+		mod = 'Late ';
+
+	if (season == 0)
+		return mod + 'Spring';
+	if (season == 1)
+		return mod + 'Summer';
+	if (season == 2)
+		return mod + 'Autumn';
+	if (season == 3)
+		return mod + 'Winter';
+	return 'unknown'
+}
+
+function update_time() {
+
+	var box = document.getElementById("time_config");
+	// clear table
+	while (box.firstChild) {
+		box.removeChild(box.firstChild);
+	}
+	//~ box.value = "";
+	var tbl  = document.createElement('table');
+	var tr = tbl.insertRow();
+	var td = tr.insertCell();
+	var element = document.createElement("input");
+	element.type="text";
+	element.readOnly = true;
+	element.value="Current season: " + season_string();
+	td.appendChild(element);
+	box.appendChild(tbl);
 }
 
 function update_log() {
