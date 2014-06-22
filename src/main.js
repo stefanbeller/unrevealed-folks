@@ -263,9 +263,9 @@ function new_game() {
 
 		{title: 'Hunter', 		req:[	{type:'item', id:'Food', amt:1},
 										{type:'worker', id:'Unemployed', amt:1}],
-			prod:[	{id:'Food',  idlevel:[0, 3], amtlvl:[2,3], time:  3, req:[]},
+			prod:[	{id:'Food',  idlevel:[0, 3], amtlvl:[2,2], time:  3, req:[]},
 					{id:'Food',  idlevel:[0, 3], amtlvl:[1,2], time:  7, req:[]},
-					{id:'Food',  idlevel:[0, 3], amtlvl:[0,1], time:  9, req:[]},
+					{id:'Food',  idlevel:[0, 3], amtlvl:[1,2], time:  9, req:[]},
 					{id:'Herbs', idlevel:[0, 3], amtlvl:[0,1], time:360, req:[{type:'item', id:'Food', amt:2}]},
 					// todo skins, and with tools
 				]},
@@ -454,7 +454,10 @@ function upkeep() {
 	// food upkeep
 	var amt = 0.7 * population_count();
 	var neededfood = 0;
-	for (var i = 0; i < amt; i++)
+	while (amt --> 1)
+		if (!removeOneBadItem(indexOf(items, 'Food')))
+			neededfood++;
+	if (Math.random() < amt)
 		if (!removeOneBadItem(indexOf(items, 'Food')))
 			neededfood++;
 
@@ -485,9 +488,9 @@ function simulate_item_production() {
 		var prod = workers[i].prod;
 		for (var p=0; p < prod.length; p++) {
 			product = prod[p];
-			//~ console.log(product);
 
-			add = 0;
+
+			var add = 0;
 			for (var j=0; j < maxworkerlevel; j++) {
 				if (!product.amtlvl)
 					product.amtlvl = [1,1];
@@ -498,6 +501,7 @@ function simulate_item_production() {
 						add += (product.amtlvl[0] + (product.amtlvl[1] - product.amtlvl[0]) * j/maxworkerlevel);
 				}
 			}
+			//~ console.log(" "+product + "" + add);
 
 			while (add > 0) {
 				var ind = indexOf(items, product.id);
