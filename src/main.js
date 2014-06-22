@@ -284,7 +284,12 @@ function new_game() {
 			prod:[	{id:'Food',  idlevel:[0, 1], amtlvl:[2,2], time:  3, req:[]},
 					{id:'Food',  idlevel:[0, 2], amtlvl:[1,2], time:  7, req:[]},
 					{id:'Food',  idlevel:[0, 3], amtlvl:[1,2], time:  9, req:[]},
+					{id:'Food',  idlevel:[0, 2], amtlvl:[1,2], time:  11, req:[{type:'season', id:'spring'}]},
+					{id:'Food',  idlevel:[0, 2], amtlvl:[1,2], time:  8,  req:[{type:'season', id:'summer'}]},
+					{id:'Food',  idlevel:[0, 2], amtlvl:[1,2], time:  10, req:[{type:'season', id:'autumn'}]},
 					{id:'Herbs', idlevel:[0, 3], amtlvl:[0,1], time:360, req:[{type:'item', id:'Food', amt:2}]},
+
+					{id:'Skins', idlevel:[0, 3], amtlvl:[1,2], time: 60, req:[{type:'item', id:'Food', amt:2}]},
 					// todo skins, and with tools
 				]},
 
