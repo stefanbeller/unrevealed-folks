@@ -251,8 +251,8 @@ function new_game() {
 
 		{title: 'Hunter', 		req:[	{type:'item', id:'Food', amt:1},
 										{type:'worker', id:'Unemployed', amt:1}],
-			prod:[	{id:'Food',  idlevel:[0, 5], amtlvl:[3,4], time: 3, req:[]},
-					//{id:'Wood',  idlevel:[0, 3], amtlvl:[0,1], time:600, req:[{type:'item', id:'Food', amt:2}]},
+			prod:[	{id:'Food',  idlevel:[0, 5], amtlvl:[2,3], time: 3, req:[]},
+					{id:'Food',  idlevel:[0, 3], amtlvl:[1,2], time: 8, req:[]},
 					{id:'Herbs', idlevel:[0, 3], amtlvl:[0,1], time:60 , req:[{type:'item', id:'Food', amt:2}]},
 					// todo skins, and with tools
 				]},
@@ -386,7 +386,7 @@ function simulate_time() {
 		else if (season == 2)
 			s += "Autumn. Leaves are falling.";
 		else
-			s += "Winter is frosty beast."
+			s += "Winter is a frosty beast."
 		logqueue.push(s);
 	}
 }
@@ -395,10 +395,10 @@ function starveRandomWorker(amt) {
 	if (amt <= 0)
 		return;
 
-	r = Math.random();
-	s = population_count()
-	si = s;
 	for (var j=0; j < amt; j++) {
+		r = Math.random();
+		s = population_count()
+		si = s;
 		for (var i=0; i < workers.length; i++) {
 			si -= sum(workers[i].level);
 			if (r > si/s) {
