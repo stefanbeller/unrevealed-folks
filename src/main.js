@@ -300,8 +300,8 @@ function new_game() {
 		{title: 'Wood cutter',  req:[	{type:'item', id:'Food', amt:10},
 										{type:'worker', id:'Unemployed', amt:1}],
 			prod:[	{id:'Wood',  idlevel:[0, 5], amtlvl:[1,3], time: 5, req:[]},
-					{id:'Wood',  idlevel:[3, 7], amtlvl:[1,3], time: 5, req:[type:'season', id:'winter'}]},
-					{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:20, req:[type:'season', id:'summer'}]},
+					{id:'Wood',  idlevel:[3, 7], amtlvl:[1,3], time: 5, req:[{type:'season', id:'winter'}]},
+					{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:20, req:[{type:'season', id:'summer'}]},
 				]},
 
 
@@ -343,9 +343,9 @@ function new_game() {
 		{title: 'Herbsman',		req:[	{type:'item', id:'Herbs', amt:1},
 										{type:'worker', id:'Unemployed', amt:1}],
 			prod:[
-				{id:'Herbs',  idlevel:[0, 5], amtlvl:[1,3], time:10, req:[type:'season', id:'spring']},
-				{id:'Herbs',  idlevel:[3, 7], amtlvl:[2,5], time:10, req:[type:'season', id:'summer']},
-				{id:'Herbs',  idlevel:[2, 6], amtlvl:[1,3], time:10, req:[type:'season', id:'autumn']},
+				{id:'Herbs',  idlevel:[0, 5], amtlvl:[1,3], time:10, req:[{type:'season', id:'spring'}]},
+				{id:'Herbs',  idlevel:[3, 7], amtlvl:[2,5], time:10, req:[{type:'season', id:'summer'}]},
+				{id:'Herbs',  idlevel:[2, 6], amtlvl:[1,3], time:10, req:[{type:'season', id:'autumn'}]},
 				]},
 
 		//~ {title: 'Shaman', 		req:[	{type:'item', id:'Wood', amt:1},
