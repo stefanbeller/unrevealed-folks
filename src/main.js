@@ -301,8 +301,13 @@ function new_game() {
 					//~ {id:'Food',  idlevel:[0, 5], amtlvl:[2,4], time: 3, req:[]},
 					//~ {id:'Food',  idlevel:[5,10], amtlvl:[3,6], time:30, req:[]},
 
-					{id:'planted_crops_spring',  idlevel:[5,12], amtlvl:[6,9], time:2, req:[{type:'season', id:'spring'}]},
-					{id:'planted_crops_autumn',  idlevel:[5,12], amtlvl:[6,9], time:2, req:[{type:'season', id:'autumn'}]},
+					{id:'planted_crops_spring',  idlevel:[0,0], amtlvl:[6,9], time:2, req:[{type:'season', id:'spring'}]},
+					{id:'planted_crops_autumn',  idlevel:[0,0], amtlvl:[6,9], time:2, req:[{type:'season', id:'autumn'}]},
+
+					{id:'Food',  idlevel:[8,14], amtlvl:[18,27], time:1, req:[{type:'item', id:'planted_crops_spring', amt:9},{type:'item', id:'crop_milling', amt:9},{type:'season', id:'autumn'}]},
+					{id:'Food',  idlevel:[8,14], amtlvl:[18,27], time:1, req:[{type:'item', id:'planted_crops_autumn', amt:9},{type:'item', id:'crop_milling', amt:9},{type:'season', id:'spring'}]},
+					{id:'Food',  idlevel:[8,14], amtlvl:[2,3], time:1, req:[{type:'item', id:'planted_crops_spring', amt:1},{type:'item', id:'crop_milling', amt:1},{type:'season', id:'autumn'}]},
+					{id:'Food',  idlevel:[8,14], amtlvl:[2,3], time:1, req:[{type:'item', id:'planted_crops_autumn', amt:1},{type:'item', id:'crop_milling', amt:1},{type:'season', id:'spring'}]},
 
 					{id:'Food',  idlevel:[5,10], amtlvl:[9,9], time:1, req:[{type:'item', id:'planted_crops_spring', amt:9},{type:'season', id:'autumn'}]},
 					{id:'Food',  idlevel:[5,10], amtlvl:[9,9], time:1, req:[{type:'item', id:'planted_crops_autumn', amt:9},{type:'season', id:'spring'}]},
@@ -337,6 +342,14 @@ function new_game() {
 					{id:'Ore', 	  idlevel:[7,12], amtlvl:[5,7], time:25, req:[{type:'item', id:'Tools', amt:1}]},
 				]},
 
+		{title: 'Craftsman'		req:[	{type:'item', id:'Food',   amt:1},
+										{type:'item', id:'Wood',   amt:1},
+										{type:'item', id:'Skins',   amt:1},
+										{type:'item', id:'Stone',  amt:1},
+										{type:'worker', id:'Unemployed', amt:1}],
+
+			prod:[	{id:'Tools',  idlevel:[0, 5], amtlvl:[1,3], time:3, req:[{type:'item', id:'Stone', amt:2}, {type:'item', id:'Wood', amt:2}]},
+				]},
 
 		{title: 'Smith', 		req:[	{type:'item', id:'Wood', amt:1},
 										{type:'item', id:'Ore',  amt:1},
@@ -385,6 +398,7 @@ function new_game() {
 
 		{title:'planted_crops_spring', hidden:true},
 		{title:'planted_crops_autumn', hidden:true},
+		{title:'crop_milling', hidden:true, decaying:3}
 	];
 	for (var i=0; i < items.length; i++) {
 		items[i].level = makeArrayOf(0,maxitemlevel);
@@ -403,7 +417,12 @@ function new_game() {
 		{title:'House',req:[{type:'item', id:'Wood', amt:100}]},
 
 		{title:'Farm',req:[{type:'item', id:'Wood', amt:100}]},
-		{title:'Mill',req:[{type:'item', id:'Wood', amt:100}]},
+		{title:'Mill',	req:[{type:'item', id:'Wood', amt:100}]
+				prod:[
+					{id:'crop_milling', idlevel:[0, 7], amtlvl:[1,2], time:3, req:[]},
+				]},
+
+			},
 		{title:'Butchery',req:[{type:'item', id:'Wood', amt:100}]},
 
 		{title:'Tool Makers Hut',req:[{type:'item', id:'Wood', amt:100}]},
@@ -508,9 +527,8 @@ function upkeep() {
 			}
 			amt = binomialdraw(items[i].level[0], 1/items[i].decaying)
 			items[i].level[0] -= amt;
-			if (amt != 0)
+			if (amt != 0 && !items[i].hidden)
 				logqueue.push(""+amt+ " " + items[i].title + " decayed.");
-
 		}
 	}
 
@@ -780,3 +798,9 @@ function update_log() {
 	}
 	logqueue.splice(0, logqueue.length-box.rows);
 }
+
+
+
+// TODO: buildings as  requirements and their prizing
+//
+// illness, attacks, loyality
