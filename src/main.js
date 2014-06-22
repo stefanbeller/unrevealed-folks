@@ -27,7 +27,7 @@ modification, are permitted provided that the following conditions are met:
 
 var save = null;
 
-var DEBUG = true;
+var DEBUG = false;
 
 // todo: count as function summing over levels
 // maxlevel 15, toin coss chance for upgrade, increases if there are higher ups already.
@@ -187,20 +187,32 @@ function indexOf(array, name) {
 	return -1;
 }
 
-function check_req_list(req_list) {
+function check_req_list(req_list, amt) {
+	if (!amt)
+		amt=1;
 	var ret = true;
 	// first check if all conditions are met
 	for (var i = 0; i < req_list.length; i++) {
 		if (req_list[i].type == 'item') {
 			var ind = indexOf(items, req_list[i].id);
-			if (sum(items[ind].level) >= req_list[i].amt) {
+			if (sum(items[ind].level) >= req_list[i].amt * amt) {
 				// ok
 			} else {
 				ret = false;
 			}
-		} else if ( req_list[i].type == 'worker') {
+		} else if (req_list[i].type == 'worker') {
 			var ind = indexOf(workers, req_list[i].id);
-			if (sum(workers[ind].level) >= req_list[i].amt) {
+			if (sum(workers[ind].level) >= req_list[i].amt * amt) {
+				// ok
+			} else {
+				ret = false;
+			}
+		} else if (req_list[i].type == 'season') {
+			s = req_list[i].idtoLowerCase();
+			if ((s == 'spring' && season == 0) ||
+				(s == 'summer' && season == 1) ||
+				(s == 'autumn' && season == 2) ||
+				(s == 'winter' && season == 3) ) {
 				// ok
 			} else {
 				ret = false;
@@ -251,34 +263,42 @@ function new_game() {
 
 		{title: 'Hunter', 		req:[	{type:'item', id:'Food', amt:1},
 										{type:'worker', id:'Unemployed', amt:1}],
-			prod:[	{id:'Food',  idlevel:[0, 5], amtlvl:[2,3], time: 3, req:[]},
-					{id:'Food',  idlevel:[0, 3], amtlvl:[1,2], time: 8, req:[]},
-					{id:'Herbs', idlevel:[0, 3], amtlvl:[0,1], time:60 , req:[{type:'item', id:'Food', amt:2}]},
+			prod:[	{id:'Food',  idlevel:[0, 3], amtlvl:[2,3], time:  3, req:[]},
+					{id:'Food',  idlevel:[0, 3], amtlvl:[1,2], time:  7, req:[]},
+					{id:'Food',  idlevel:[0, 3], amtlvl:[0,1], time:  9, req:[]},
+					{id:'Herbs', idlevel:[0, 3], amtlvl:[0,1], time:360, req:[{type:'item', id:'Food', amt:2}]},
 					// todo skins, and with tools
 				]},
-
 
 		{title: 'Farmer', 		req:[	{type:'item', id:'Wood', amt:100},
 										{type:'worker', id:'Unemployed', amt:1}],
 
-			prod:[	{id:'Food',  idlevel:[0, 5], amtlvl:[2,4], time: 3, req:[]},
-					{id:'Food',  idlevel:[5,10], amtlvl:[3,6], time:30, req:[]},
+			prod:[
+					//~ {id:'Food',  idlevel:[0, 5], amtlvl:[2,4], time: 3, req:[]},
+					//~ {id:'Food',  idlevel:[5,10], amtlvl:[3,6], time:30, req:[]},
+
+					{id:'planted_crops_spring',  idlevel:[5,10], amtlvl:[4,6], time:2, req:[{type:'season', id:'spring'}]},
+					{id:'planted_crops_autumn',  idlevel:[5,10], amtlvl:[4,6], time:2, req:[{type:'season', id:'autumn'}]},
+
+					{id:'Food',  idlevel:[5,10], amtlvl:[1,1], time:1, req:[{type:'item', id:'planted_crops_spring', amt:1},{type:'season', id:'autumn'}]},
+					{id:'Food',  idlevel:[5,10], amtlvl:[1,1], time:1, req:[{type:'item', id:'planted_crops_autumn', amt:1},{type:'season', id:'spring'}]},
+
 					//{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:, req:[]},
-				]},
+				]}, // todo make dependant on season!
 
 
 		{title: 'Wood cutter',  req:[	{type:'item', id:'Food', amt:10},
 										{type:'worker', id:'Unemployed', amt:1}],
 			prod:[	{id:'Wood',  idlevel:[0, 5], amtlvl:[1,3], time: 5, req:[]},
 					{id:'Herbs', idlevel:[0, 4], amtlvl:[1,2], time:20, req:[]},
-				]},
+				]},// todo make dependant on season!
 
 
 		{title: 'Stone cutter',	req:[	{type:'item', id:'Food', amt:10},
 										{type:'item', id:'Wood', amt:10},
 										{type:'worker', id:'Unemployed', amt:1}],
-			prod:[	{id:'Stone',  idlevel:[0, 5], amtlvl:[1,3], time: 5, req:[]},
-					{id:'Ore', 	  idlevel:[0, 3], amtlvl:[1,2], time:600, req:[]},
+			prod:[	{id:'Stone',  idlevel:[0, 5], amtlvl:[1,3], time:  5, req:[]},
+					{id:'Ore', 	  idlevel:[0, 3], amtlvl:[1,2], time:720, req:[]},
 				]},
 
 		{title: 'Miner', 		req:[	{type:'item', id:'Wood',  amt:1},
@@ -324,18 +344,21 @@ function new_game() {
 		if (!workers[i].lvlupLearning)
 			workers[i].lvlupLearning = 5*360 / maxworkerlevel;
 	}
-	workers[0].level[0] = 30;
+	workers[0].level[0] = 3;
 
 	items = [
 		{title:'Food', decaying:30 }, // decaying very fast
-		{title:'Wood', 	},
-		{title:'Stone', },
-		{title:'Ore', 	},
-		{title:'Iron', 	},
-		{title:'Herbs', },
-		{title:'Skins', },
-		{title:'Tools', },
-		// coal ?
+		{title:'Wood', 		},
+		{title:'Stone', 	},
+		{title:'Ore', 		},
+		{title:'Iron', 		},
+		{title:'Herbs', 	},
+		{title:'Skins', 	},
+		{title:'Tools', 	},
+		{title:'Charcoal', 	},
+
+		{title:'planted_crops_spring', hidden:true},
+		{title:'planted_crops_autumn', hidden:true},
 	];
 	for (var i=0; i < items.length; i++) {
 		items[i].level = makeArrayOf(0,maxitemlevel);
@@ -347,6 +370,23 @@ function new_game() {
 	items[0].level[5]=99;
 
 	buildings = [
+		{title:'Tent'},
+		{title:'Hut'},
+		{title:'House'},
+
+		{title:'Farm'},
+		{title:'Mill'},
+		{title:'Butchery'},
+
+		{title:'Tool Makers Hut'},
+		{title:'Smithery'},
+		{title:'Ore Melting Hut'},
+		{title:'Charcoal burner'},
+
+		{title:'Herb Garden'},
+		{title:'Skinner Hut'},
+
+
 			// tent
 			// wooden small house
 			// stone housing
@@ -576,19 +616,27 @@ function update_workers() {
 				td.appendChild(element);
 			 } else {
 				amt = texts[j];
-				if (i != 0 || amt > 0) {
-					if (amt < 0 && sum(workers[i].level) < -amt)
-						continue;
-					if (sum(workers[0].level) == 0 && i != 0 && amt > 0)
-						continue;
-
-					var element = document.createElement("input");
-					element.type="button";
-					element.value=" " + amt;
-					element.workerindex=i;
-					element.amt=amt;
-					element.onclick=function(){trainworkers(this.workerindex, this.amt); update_workers();};
-					td.appendChild(element);
+				if (amt > 0) {
+					if (check_req_list(workers[i].req, amt)) {
+						var element = document.createElement("input");
+						element.type="button";
+						element.value=" " + amt;
+						element.workerindex=i;
+						element.amt=amt;
+						element.onclick=function(){trainworkers(this.workerindex, this.amt); update_workers();};
+						td.appendChild(element);
+					}
+				}
+				if (amt < 0 && i != 0) {
+					if (sum(workers[i].level) >= -amt) {
+						var element = document.createElement("input");
+						element.type="button";
+						element.value=" " + amt;
+						element.workerindex=i;
+						element.amt=amt;
+						element.onclick=function(){trainworkers(this.workerindex, this.amt); update_workers();};
+						td.appendChild(element);
+					}
 				}
 			}
 		}
@@ -609,7 +657,7 @@ function update_items() {
 	for(var i = 0; i < items.length; i++){
 		if (sum(items[i].level) > 0)
 			items[i].visible=true;
-		if (!items[i].visible)
+		if (!items[i].visible || (items[i].hidden && !DEBUG))
 			continue;
 
 		var tr = tbl.insertRow();
