@@ -283,10 +283,10 @@ function new_game() {
 					{id:'planted_crops_spring',  idlevel:[0,0], amtlvl:[6,9], time:2, req:[{type:'season', id:'spring'}]},
 					{id:'planted_crops_autumn',  idlevel:[0,0], amtlvl:[6,9], time:2, req:[{type:'season', id:'autumn'}]},
 
-					{id:'Food',  idlevel:[8,14], amtlvl:[18,27], time:1, req:[{type:'item', id:'planted_crops_spring', amt:9},{type:'item', id:'crop_milling', amt:9},{type:'season', id:'autumn'}]},
-					{id:'Food',  idlevel:[8,14], amtlvl:[18,27], time:1, req:[{type:'item', id:'planted_crops_autumn', amt:9},{type:'item', id:'crop_milling', amt:9},{type:'season', id:'spring'}]},
-					{id:'Food',  idlevel:[8,14], amtlvl:[2,3], time:1, req:[{type:'item', id:'planted_crops_spring', amt:1},{type:'item', id:'crop_milling', amt:1},{type:'season', id:'autumn'}]},
-					{id:'Food',  idlevel:[8,14], amtlvl:[2,3], time:1, req:[{type:'item', id:'planted_crops_autumn', amt:1},{type:'item', id:'crop_milling', amt:1},{type:'season', id:'spring'}]},
+					{id:'Food',  idlevel:[9,14], amtlvl:[18,27], time:1, req:[{type:'item', id:'planted_crops_spring', amt:9},{type:'item', id:'crop_milling', amt:9},{type:'season', id:'autumn'}]},
+					{id:'Food',  idlevel:[9,14], amtlvl:[18,27], time:1, req:[{type:'item', id:'planted_crops_autumn', amt:9},{type:'item', id:'crop_milling', amt:9},{type:'season', id:'spring'}]},
+					{id:'Food',  idlevel:[9,14], amtlvl:[2,3], time:1, req:[{type:'item', id:'planted_crops_spring', amt:1},{type:'item', id:'crop_milling', amt:1},{type:'season', id:'autumn'}]},
+					{id:'Food',  idlevel:[9,14], amtlvl:[2,3], time:1, req:[{type:'item', id:'planted_crops_autumn', amt:1},{type:'item', id:'crop_milling', amt:1},{type:'season', id:'spring'}]},
 
 					{id:'Food',  idlevel:[5,10], amtlvl:[5,8], time:1, req:[{type:'item', id:'planted_crops_spring', amt:5},{type:'season', id:'autumn'}]},
 					{id:'Food',  idlevel:[5,10], amtlvl:[5,8], time:1, req:[{type:'item', id:'planted_crops_autumn', amt:5},{type:'season', id:'spring'}]},
