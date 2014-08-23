@@ -253,12 +253,14 @@ function new_game() {
 		logqueue.push("");
 	}
 	workers = [
-		{title: 'Unemployed', 	req:[	{type:'item', id:'Food', amt:50}],
+		{title: 'Unemployed', 	help: 'A new worker',
+								req:[{type:'item', id:'Food', amt:50}],
 			prod:[ //{id:'Food',  idlevel:[0, 5], amtlvl:[3,4], time: 3, req:[]},
 				]},
 
 
-		{title: 'Hunter', 		req:[	//{type:'item', id:'Food', amt:1},
+		{title: 'Hunter', 		help:'A hunter hunts animals and gathers food from the surroundings. They can hardly support themselves.',
+								req:[	//{type:'item', id:'Food', amt:1},
 										{type:'worker', id:'Unemployed', amt:1}],
 			prod:[	{id:'Food',  idlevel:[0, 1], amtlvl:[2,3], time:  3, req:[]},
 					{id:'Food',  idlevel:[0, 2], amtlvl:[1,2], time:  7, req:[]},
@@ -272,7 +274,8 @@ function new_game() {
 					// todo skins, and with tools
 				]},
 
-		{title: 'Farmer', 		req:[	{type:'item', id:'Wood', amt:100},
+		{title: 'Farmer', 		help:'A farmer plants crop in spring and autumn and harvests later. A farmer can produce more food than a hunter, but their output is acyclical.',
+								req:[	{type:'item', id:'Wood', amt:100},
 										{type:'worker', id:'Unemployed', amt:1},
 										{type:'building', id:'Farm', amt:1}],
 
@@ -297,7 +300,8 @@ function new_game() {
 				]}, // todo make dependant on season!
 
 
-		{title: 'Wood cutter',  req:[	{type:'item', id:'Food', amt:10},
+		{title: 'Wood cutter',  help:'A Woodcutter will produce wooden logs required for most buildings.',
+								req:[	{type:'item', id:'Food', amt:10},
 										{type:'worker', id:'Unemployed', amt:1}],
 			prod:[	{id:'Wood',  idlevel:[0, 5], amtlvl:[1,3], time: 5, req:[]},
 					{id:'Wood',  idlevel:[3, 7], amtlvl:[1,3], time: 5, req:[{type:'season', id:'winter'}]},
@@ -305,14 +309,16 @@ function new_game() {
 				]},
 
 
-		{title: 'Stone cutter',	req:[	{type:'item', id:'Food', amt:10},
+		{title: 'Stone cutter',	help:'A Stone cutter will produce stones required for advanced buildings.',
+								req:[	{type:'item', id:'Food', amt:10},
 										{type:'item', id:'Wood', amt:10},
 										{type:'worker', id:'Unemployed', amt:1}],
 			prod:[	{id:'Stone',  idlevel:[0, 5], amtlvl:[1,3], time:  5, req:[]},
 					{id:'Ore', 	  idlevel:[0, 3], amtlvl:[1,2], time:720, req:[]},
 				]},
 
-		{title: 'Miner', 		req:[	{type:'item', id:'Wood',  amt:1},
+		{title: 'Miner', 		help:'',
+								req:[	{type:'item', id:'Wood',  amt:1},
 										{type:'item', id:'Tools', amt:1},
 										{type:'worker', id:'Unemployed', amt:1}
 									],
@@ -322,7 +328,8 @@ function new_game() {
 					{id:'Ore', 	  idlevel:[7,12], amtlvl:[5,7], time:25, req:[{type:'item', id:'Tools', amt:1}]},
 				]},
 
-		{title: 'Craftsman',	req:[	{type:'item', id:'Food',   amt:1},
+		{title: 'Craftsman',	help:'',
+								req:[	{type:'item', id:'Food',   amt:1},
 										{type:'item', id:'Wood',   amt:1},
 										{type:'item', id:'Skins',   amt:1},
 										{type:'item', id:'Stone',  amt:1},
@@ -331,7 +338,8 @@ function new_game() {
 			prod:[	{id:'Tools',  idlevel:[0, 5], amtlvl:[1,3], time:3, req:[{type:'item', id:'Stone', amt:2}, {type:'item', id:'Wood', amt:2}]},
 				]},
 
-		{title: 'Smith', 		req:[	{type:'item', id:'Wood', amt:1},
+		{title: 'Smith', 		help:'',
+								req:[	{type:'item', id:'Wood', amt:1},
 										{type:'item', id:'Ore',  amt:1},
 										{type:'worker', id:'Unemployed', amt:1}],
 
@@ -340,7 +348,8 @@ function new_game() {
 				]},
 
 
-		{title: 'Herbsman',		req:[	{type:'item', id:'Herbs', amt:1},
+		{title: 'Herbsman',		help:'',
+								req:[	{type:'item', id:'Herbs', amt:1},
 										{type:'worker', id:'Unemployed', amt:1}],
 			prod:[
 				{id:'Herbs',  idlevel:[0, 5], amtlvl:[1,3], time:10, req:[{type:'season', id:'spring'}]},
@@ -646,6 +655,7 @@ function update_workers() {
 				var element = document.createElement("input");
 				element.type="text";
 				element.readOnly = true;
+				element.title = workers[i].help;
 				element.value= workers[i].title;
 				td.appendChild(element);
 			 } else if  (texts[j] == 'value') {
